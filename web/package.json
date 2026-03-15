@@ -1,0 +1,14 @@
+{
+  "name": "migrare-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "migrare web UI",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

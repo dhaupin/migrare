@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>migrare — escape vendor lock-in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #080c08;
+      --bg-1:        #0d120d;
+      --bg-2:        #111711;
+      --bg-3:        #161e16;
+      --border:      #1e2a1e;
+      --border-hi:   #2a3f2a;
+      --green:       #00e676;
+      --green-dim:   #00a152;
+      --green-glow:  rgba(0, 230, 118, 0.08);
+      --green-glow2: rgba(0, 230, 118, 0.15);
+      --text:        #c8d8c8;
+      --text-dim:    #5a7a5a;
+      --text-muted:  #3a4f3a;
+      --yellow:      #ffd54f;
+      --red:         #ff5252;
+      --cyan:        #40c4ff;
+      --mono:        'IBM Plex Mono', 'Fira Code', monospace;
+      --sans:        'IBM Plex Sans', system-ui, sans-serif;
+      --radius:      3px;
+    }
+
+    html { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      height: 100%;
+      overflow: hidden;
+      /* Subtle scanline texture */
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 230, 118, 0.008) 2px,
+        rgba(0, 230, 118, 0.008) 4px
+      );
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────── */
+    #app {
+      display: grid;
+      grid-template-rows: 44px 1fr;
+      grid-template-columns: 280px 1fr 320px;
+      height: 100vh;
+      gap: 0;
+    }
+
+    /* ── Topbar ───────────────────────────────────────────────────── */
+    #topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: 0 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-1);
+    }
+
+    .logo {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--green);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-dot {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green), 0 0 16px var(--green-dim);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .tagline {
+      color: var(--text-dim);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      font-family: var(--sans);
+    }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border: 1px solid var(--border-hi);
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      border-radius: var(--radius);
+    }
+
+    .gh-link {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.15s;
+    }
+    .gh-link:hover { color: var(--green); }
+
+    /* ── Left sidebar — ingestion ─────────────────────────────────── */
+    #sidebar-left {
+      border-right: 1px solid var(--border);
+      background: var(--bg-1);
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding: 0.25rem 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Ingestion methods */
+    .ingest-method {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .ingest-method:hover { border-color: var(--border-hi); }
+    .ingest-method.active { border-color: var(--green-dim); }
+
+    .ingest-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 0.75rem;
+      cursor: pointer;
+      background: var(--bg-2);
+      font-size: 12px;
+      color: var(--text);
+      transition: background 0.1s;
+    }
+
+    .ingest-header:hover { background: var(--bg-3); }
+    .ingest-method.active .ingest-header { color: var(--green); }
+
+    .ingest-icon {
+      font-size: 13px;
+      width: 18px;
+      text-align: center;
+      color: var(--text-dim);
+    }
+    .ingest-method.active .ingest-icon { color: var(--green); }
+
+    .ingest-body {
+      display: none;
+      padding: 0.75rem;
+      background: var(--bg-1);
+      border-top: 1px solid var(--border);
+    }
+    .ingest-method.active .ingest-body { display: block; }
+
+    /* Drop zone */
+    #dropzone {
+      border: 1px dashed var(--border-hi);
+      border-radius: var(--radius);
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-dim);
+      font-size: 11px;
+      line-height: 1.8;
+    }
+
+    #dropzone:hover, #dropzone.drag-over {
+      border-color: var(--green-dim);
+      background: var(--green-glow);
+      color: var(--text);
+    }
+
+    #dropzone .drop-icon { font-size: 22px; margin-bottom: 0.5rem; color: var(--green-dim); }
+    #dropzone input { display: none; }
+
+    /* Inputs */
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.08em; }
+
+    .input {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 0.45rem 0.6rem;
+      border-radius: var(--radius);
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+
+    .input:focus { border-color: var(--green-dim); }
+    .input::placeholder { color: var(--text-muted); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      border-color: var(--green);
+      color: #000;
+      font-weight: 500;
+    }
+    .btn-primary:hover { background: #00ff88; box-shadow: 0 0 16px var(--green-dim); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border-hi);
+      color: var(--text-dim);
+    }
+    .btn-ghost:hover { border-color: var(--green-dim); color: var(--text); }
+
+    .btn-danger {
+      background: transparent;
+      border-color: rgba(255,82,82,0.3);
+      color: var(--red);
+    }
+
+    /* Target selector */
+    .target-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+    }
+
+    .target-option {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.5rem 0.6rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 11px;
+    }
+
+    .target-option:hover { border-color: var(--border-hi); }
+    .target-option.selected { border-color: var(--green-dim); background: var(--green-glow); color: var(--green); }
+    .target-option .t-name { font-weight: 500; }
+    .target-option .t-desc { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+    .target-option.selected .t-desc { color: var(--green-dim); }
+
+    /* Action area */
+    .action-area {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .dry-run-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 11px;
+      color: var(--text-dim);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle {
+      width: 28px; height: 16px;
+      background: var(--bg-3);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      position: relative;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 10px; height: 10px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    input:checked + .toggle { background: var(--green-dim); border-color: var(--green-dim); }
+    input:checked + .toggle::after { left: 14px; background: var(--bg); }
+    input[type=checkbox] { display: none; }
+
+    /* ── Main content ─────────────────────────────────────────────── */
+    #main {
+      overflow-y: auto;
+      background: var(--bg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Empty state */
+    #empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 1rem;
+      color: var(--text-muted);
+    }
+
+    .empty-art {
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-muted);
+      opacity: 0.5;
+      white-space: pre;
+      text-align: center;
+    }
+
+    .empty-hint {
+      font-family: var(--sans);
+      font-size: 12px;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
+    /* Scan results */
+    .scan-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .scan-platform {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--green);
+    }
+
+    .complexity-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: var(--radius);
+      letter-spacing: 0.08em;
+    }
+
+    .complexity-trivial  { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+    .complexity-moderate { background: rgba(64,196,255,0.1); color: var(--cyan); border: 1px solid rgba(64,196,255,0.2); }
+    .complexity-complex  { background: rgba(255,213,79,0.1); color: var(--yellow); border: 1px solid rgba(255,213,79,0.2); }
+    .complexity-requires-manual { background: rgba(255,82,82,0.1); color: var(--red); border: 1px solid rgba(255,82,82,0.2); }
+
+    .stats-row {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .stat { display: flex; align-items: center; gap: 0.3rem; }
+    .stat-error   { color: var(--red); }
+    .stat-warning { color: var(--yellow); }
+    .stat-info    { color: var(--cyan); }
+
+    /* Category groups */
+    .category-group {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.75rem;
+      background: var(--bg-2);
+      cursor: pointer;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .category-header:hover { background: var(--bg-3); }
+
+    .category-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--cyan);
+    }
+
+    .category-count {
+      font-size: 10px;
+      color: var(--text-dim);
+      background: var(--bg-3);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    .category-chevron {
+      color: var(--text-muted);
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+
+    .category-group.collapsed .category-chevron { transform: rotate(-90deg); }
+    .category-group.collapsed .signal-list { display: none; }
+
+    .signal-list { border-top: 1px solid var(--border); }
+
+    .signal-item {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 16px 1fr auto;
+      gap: 0.5rem;
+      align-items: start;
+      transition: background 0.1s;
+    }
+
+    .signal-item:last-child { border-bottom: none; }
+    .signal-item:hover { background: var(--bg-2); }
+
+    .signal-icon { margin-top: 1px; font-size: 11px; }
+    .sig-error   .signal-icon { color: var(--red); }
+    .sig-warning .signal-icon { color: var(--yellow); }
+    .sig-info    .signal-icon { color: var(--cyan); }
+
+    .signal-body { min-width: 0; }
+    .signal-desc { font-size: 12px; color: var(--text); line-height: 1.4; }
+    .signal-loc  { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: var(--mono); }
+    .signal-suggestion {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--green-dim);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-family: var(--sans);
+    }
+
+    .confidence-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .conf-high   { background: var(--green); }
+    .conf-medium { background: var(--yellow); }
+    .conf-low    { background: var(--text-muted); }
+
+    /* Progress */
+    #progress-panel {
+      border: 1px solid var(--green-dim);
+      border-radius: var(--radius);
+      background: var(--green-glow);
+      padding: 1rem 1.25rem;
+    }
+
+    .progress-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .progress-step { color: var(--green); }
+
+    .progress-bar-track {
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 1px;
+      box-shadow: 0 0 6px var(--green);
+      transition: width 0.3s ease;
+    }
+
+    .progress-log {
+      margin-top: 0.75rem;
+      font-size: 11px;
+      color: var(--text-dim);
+      max-height: 120px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .log-line { display: flex; gap: 0.5rem; align-items: baseline; }
+    .log-time { color: var(--text-muted); flex-shrink: 0; }
+    .log-msg.ok   { color: var(--green); }
+    .log-msg.warn { color: var(--yellow); }
+    .log-msg.err  { color: var(--red); }
+
+    /* ── Right sidebar — transform plan ──────────────────────────── */
+    #sidebar-right {
+      border-left: 1px solid var(--border);
+      background: var(--bg-1);
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .transform-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .transform-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.7rem;
+      background: var(--bg-2);
+      font-size: 11px;
+    }
+
+    .transform-status {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .ts-pending  { background: var(--text-muted); }
+    .ts-running  { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 0.8s infinite; }
+    .ts-done     { background: var(--green); }
+    .ts-skipped  { background: var(--border-hi); }
+    .ts-error    { background: var(--red); }
+
+    .transform-name { color: var(--text); flex: 1; }
+    .transform-dur  { color: var(--text-muted); font-size: 10px; }
+
+    .transform-detail {
+      padding: 0.5rem 0.7rem;
+      font-size: 10px;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border);
+      background: var(--bg-1);
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--green-dim); }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in { animation: fadeIn 0.2s ease forwards; }
+
+    @keyframes shimmer {
+      0%   { opacity: 0.5; }
+      50%  { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+
+    .scanning { animation: shimmer 1.2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Topbar ──────────────────────────────────────────────────── -->
+  <header id="topbar">
+    <div class="logo">
+      <span class="logo-dot"></span>
+      migrare
+    </div>
+    <span class="tagline">escape vendor lock-in — your code belongs to you</span>
+    <div class="topbar-right">
+      <span class="badge" id="server-status">connecting...</span>
+      <a class="gh-link" href="https://github.com/migrare/migrare" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Left sidebar ────────────────────────────────────────────── -->
+  <aside id="sidebar-left">
+    <div class="section-label">// source</div>
+
+    <!-- Drag & drop ZIP -->
+    <div class="ingest-method active" id="method-zip">
+      <div class="ingest-header" onclick="toggleMethod('zip')">
+        <span class="ingest-icon">📦</span>
+        <span>Drop ZIP export</span>
+      </div>
+      <div class="ingest-body">
+        <div id="dropzone" onclick="document.getElementById('zip-input').click()">
+          <div class="drop-icon">⬇</div>
+          <div>Drop your Lovable ZIP here</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">or click to browse</div>
+          <input type="file" id="zip-input" accept=".zip" onchange="handleZipFile(this)">
+        </div>
+      </div>
+    </div>
+
+    <!-- GitHub OAuth -->
+    <div class="ingest-method" id="method-github">
+      <div class="ingest-header" onclick="toggleMethod('github')">
+        <span class="ingest-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </span>
+        <span>Connect GitHub</span>
+      </div>
+      <div class="ingest-body">
+        <div class="field" style="margin-bottom:0.6rem">
+          <label>REPOSITORY URL</label>
+          <input class="input" type="text" id="github-url" placeholder="github.com/user/repo" oninput="validateGithubUrl(this)">
+        </div>
+        <button class="btn btn-ghost" style="width:100%" onclick="connectGitHub()">
+          Connect with GitHub →
+        </button>
+      </div>
+    </div>
+
+    <!-- Paste URL -->
+    <div class="ingest-method" id="method-url">
+      <div class="ingest-header" onclick="toggleMethod('url')">
+        <span class="ingest-icon">🔗</span>
+        <span>Paste GitHub URL</span>
+      </div>
+      <div class="ingest-body">
+        <div class="field">
+          <label>PUBLIC REPO URL</label>
+          <input class="input" type="text" id="paste-url" placeholder="https://github.com/user/repo">
+        </div>
+        <button class="btn btn-ghost" style="width:100%;margin-top:0.5rem" onclick="loadFromUrl()">
+          Load →
+        </button>
+      </div>
+    </div>
+
+    <!-- File System API -->
+    <div class="ingest-method" id="method-fs">
+      <div class="ingest-header" onclick="toggleMethod('fs')">
+        <span class="ingest-icon">📁</span>
+        <span>Pick folder</span>
+      </div>
+      <div class="ingest-body">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:0.5rem;font-family:var(--sans);line-height:1.5">
+          Uses the browser File System Access API to read a local project folder directly.
+        </div>
+        <button class="btn btn-ghost" style="width:100%" onclick="pickFolder()">
+          Browse folder →
+        </button>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="margin-top:0.5rem">
+      <div class="section-label">// output target</div>
+      <div class="target-grid">
+        <div class="target-option selected" onclick="selectTarget('vite')" id="target-vite">
+          <div class="t-name">Vite</div>
+          <div class="t-desc">React, portable</div>
+        </div>
+        <div class="target-option" onclick="selectTarget('nextjs')" id="target-nextjs">
+          <div class="t-name">Next.js</div>
+          <div class="t-desc">App Router</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-area">
+      <label class="dry-run-toggle">
+        <input type="checkbox" id="dry-run-toggle" checked onchange="updateDryRun(this)">
+        <span class="toggle"></span>
+        Dry run mode
+      </label>
+      <button class="btn btn-ghost" id="scan-btn" onclick="runScan()" disabled>
+        ◈ Scan for lock-in
+      </button>
+      <button class="btn btn-primary" id="migrate-btn" onclick="runMigrate()" disabled>
+        ▸ Migrate project
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────────────── -->
+  <main id="main">
+    <div id="empty-state">
+      <pre class="empty-art">  ╔╦╗╦╔═╗╦═╗╔═╗╦═╗╔═╗
+  ║║║║║ ╦╠╦╝╠═╣╠╦╝║╣
+  ╩ ╩╩╚═╝╩╚═╩ ╩╩╚═╚═╝</pre>
+      <div class="empty-hint">Load a project to begin scanning</div>
+      <div style="font-size:10px;color:var(--text-muted);font-family:var(--sans)">
+        Supports Lovable exports · GitHub repos · local folders
+      </div>
+    </div>
+    <div id="results-area" style="display:none"></div>
+  </main>
+
+  <!-- ── Right sidebar ───────────────────────────────────────────── -->
+  <aside id="sidebar-right">
+    <div class="section-label">// transform plan</div>
+    <div id="transform-list">
+      <div style="color:var(--text-muted);font-size:11px;padding:0.5rem;font-family:var(--sans)">
+        Transforms will appear here after scanning.
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+// =============================================================================
+// migrare web UI — client logic
+// Talks to local migrare server (localhost:4242) OR migrare.dev API
+// =============================================================================
+
+const API = (() => {
+  // Detect if running against local server or hosted
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  return isLocal ? '' : 'https://api.migrare.dev';
+})();
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+const state = {
+  projectLoaded: false,
+  projectSource: null,   // { type: 'zip'|'github'|'url'|'fs', data: any }
+  scanReport: null,
+  migrationResult: null,
+  activeMethod: 'zip',
+  selectedTarget: 'vite',
+  dryRun: true,
+  scanning: false,
+  migrating: false,
+};
+
+// ---------------------------------------------------------------------------
+// Server health check
+// ---------------------------------------------------------------------------
+async function checkServer() {
+  try {
+    const res = await fetch(`${API}/api/health`);
+    const data = await res.json();
+    const badge = document.getElementById('server-status');
+    badge.textContent = `v${data.version} ●`;
+    badge.style.color = 'var(--green)';
+    badge.style.borderColor = 'var(--green-dim)';
+  } catch {
+    const badge = document.getElementById('server-status');
+    badge.textContent = 'offline';
+    badge.style.color = 'var(--red)';
+  }
+}
+
+checkServer();
+
+// ---------------------------------------------------------------------------
+// Ingestion methods
+// ---------------------------------------------------------------------------
+function toggleMethod(id) {
+  document.querySelectorAll('.ingest-method').forEach(el => el.classList.remove('active'));
+  document.getElementById('method-' + id).classList.add('active');
+  state.activeMethod = id;
+}
+
+// ZIP handler
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file?.name.endsWith('.zip')) loadZipFile(file);
+});
+
+function handleZipFile(input) {
+  const file = input.files[0];
+  if (file) loadZipFile(file);
+}
+
+function loadZipFile(file) {
+  state.projectSource = { type: 'zip', name: file.name, file };
+  state.projectLoaded = true;
+  dropzone.innerHTML = `
+    <div class="drop-icon" style="color:var(--green)">✓</div>
+    <div style="color:var(--text)">${file.name}</div>
+    <div style="font-size:10px;color:var(--text-dim);margin-top:4px">${(file.size / 1024).toFixed(1)} KB</div>
+  `;
+  updateButtons();
+  logToResults('info', `Loaded: ${file.name}`);
+}
+
+function connectGitHub() {
+  const url = document.getElementById('github-url').value.trim();
+  if (!url) return;
+  state.projectSource = { type: 'github', url };
+  state.projectLoaded = true;
+  updateButtons();
+  logToResults('ok', `GitHub source: ${url}`);
+}
+
+function loadFromUrl() {
+  const url = document.getElementById('paste-url').value.trim();
+  if (!url) return;
+  state.projectSource = { type: 'url', url };
+  state.projectLoaded = true;
+  updateButtons();
+  logToResults('ok', `URL source: ${url}`);
+}
+
+async function pickFolder() {
+  if (!window.showDirectoryPicker) {
+    showError('File System Access API is not supported in this browser. Try Chrome or Edge.');
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'read' });
+    state.projectSource = { type: 'fs', handle, name: handle.name };
+    state.projectLoaded = true;
+    updateButtons();
+    logToResults('ok', `Folder selected: ${handle.name}`);
+  } catch (err) {
+    if (err.name !== 'AbortError') showError('Could not open folder: ' + err.message);
+  }
+}
+
+function validateGithubUrl(input) {
+  const valid = input.value.includes('github.com');
+  input.style.borderColor = input.value && !valid ? 'var(--red)' : '';
+}
+
+// ---------------------------------------------------------------------------
+// Target selection
+// ---------------------------------------------------------------------------
+function selectTarget(id) {
+  document.querySelectorAll('.target-option').forEach(el => el.classList.remove('selected'));
+  document.getElementById('target-' + id).classList.add('selected');
+  state.selectedTarget = id;
+}
+
+function updateDryRun(checkbox) {
+  state.dryRun = checkbox.checked;
+  const migrateBtn = document.getElementById('migrate-btn');
+  migrateBtn.textContent = state.dryRun ? '◈ Preview migration' : '▸ Migrate project';
+}
+
+// ---------------------------------------------------------------------------
+// Buttons
+// ---------------------------------------------------------------------------
+function updateButtons() {
+  const enabled = state.projectLoaded && !state.scanning && !state.migrating;
+  document.getElementById('scan-btn').disabled = !enabled;
+  document.getElementById('migrate-btn').disabled = !enabled;
+}
+
+// ---------------------------------------------------------------------------
+// Scan
+// ---------------------------------------------------------------------------
+async function runScan() {
+  if (!state.projectLoaded) return;
+  state.scanning = true;
+  updateButtons();
+  showResultsArea();
+  clearResults();
+  showProgress('Scanning for lock-in signals...', 0);
+
+  try {
+    // Build source payload
+    const source = await buildSourcePayload();
+
+    updateProgress('Analyzing files...', 30);
+    const res = await fetch(`${API}/api/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source }),
+    });
+
+    updateProgress('Building report...', 80);
+    const report = await res.json();
+    state.scanReport = report;
+    updateProgress('Complete', 100);
+
+    await sleep(300);
+    hideProgress();
+    renderScanReport(report);
+    renderTransformPlan(report);
+
+  } catch (err) {
+    hideProgress();
+    showError('Scan failed: ' + err.message);
+  } finally {
+    state.scanning = false;
+    updateButtons();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Migrate
+// ---------------------------------------------------------------------------
+async function runMigrate() {
+  if (!state.projectLoaded) return;
+  state.migrating = true;
+  updateButtons();
+  showResultsArea();
+  clearResults();
+  showProgress('Preparing migration...', 0);
+
+  // Connect SSE for live progress
+  const sse = new EventSource(`${API}/api/progress`);
+  sse.onmessage = (e) => {
+    const event = JSON.parse(e.data);
+    const pct = Math.round((event.current / event.total) * 100);
+    updateProgress(event.step, pct);
+    markTransformRunning(event.step);
+  };
+
+  try {
+    const source = await buildSourcePayload();
+
+    const res = await fetch(`${API}/api/migrate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source,
+        targetAdapter: state.selectedTarget,
+        targetPath: './migrated-output',
+        dryRun: state.dryRun,
+      }),
+    });
+
+    const result = await res.json();
+    state.migrationResult = result;
+    sse.close();
+    hideProgress();
+    renderMigrationResult(result);
+    updateTransformPlanFromLog(result.transformLog);
+
+  } catch (err) {
+    sse.close();
+    hideProgress();
+    showError('Migration failed: ' + err.message);
+  } finally {
+    state.migrating = false;
+    updateButtons();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Render — scan report
+// ---------------------------------------------------------------------------
+function renderScanReport(report) {
+  const container = document.getElementById('results-area');
+
+  const complexityClass = 'complexity-' + report.summary.migrationComplexity.replace(' ', '-');
+
+  const categoryLabels = {
+    'auth-coupling': 'Auth Coupling',
+    'routing-assumption': 'Routing',
+    'environment-bleed': 'Env Bleed',
+    'asset-pipeline': 'Asset Pipeline',
+    'state-entanglement': 'State',
+    'build-config': 'Build Config',
+    'proprietary-api': 'Proprietary API',
+    'unknown': 'Unknown',
+  };
+
+  // Group signals by category
+  const byCategory = {};
+  for (const signal of report.signals) {
+    if (!byCategory[signal.category]) byCategory[signal.category] = [];
+    byCategory[signal.category].push(signal);
+  }
+
+  let html = `
+    <div class="scan-header fade-in">
+      <span class="scan-platform">${report.platform}</span>
+      <span class="complexity-badge ${complexityClass}">${report.summary.migrationComplexity}</span>
+      <div class="stats-row">
+        <span class="stat stat-error">✗ ${report.summary.bySeverity.error ?? 0}</span>
+        <span class="stat stat-warning">⚠ ${report.summary.bySeverity.warning ?? 0}</span>
+        <span class="stat stat-info">· ${report.summary.bySeverity.info ?? 0}</span>
+      </div>
+    </div>
+  `;
+
+  if (report.signals.length === 0) {
+    html += `
+      <div class="fade-in" style="padding:2rem;text-align:center;color:var(--green);font-family:var(--sans)">
+        <div style="font-size:1.5rem;margin-bottom:0.5rem">✓</div>
+        No lock-in signals detected. Project looks portable.
+      </div>
+    `;
+  } else {
+    for (const [category, signals] of Object.entries(byCategory)) {
+      html += `
+        <div class="category-group fade-in" id="cat-${category}">
+          <div class="category-header" onclick="toggleCategory('${category}')">
+            <span class="category-name">◆ ${categoryLabels[category] ?? category}</span>
+            <span class="category-count">${signals.length}</span>
+            <span class="category-chevron">▾</span>
+          </div>
+          <div class="signal-list">
+            ${signals.map(renderSignal).join('')}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  container.innerHTML = html;
+}
+
+function renderSignal(signal) {
+  const severityClass = 'sig-' + signal.severity;
+  const icon = signal.severity === 'error' ? '✗' : signal.severity === 'warning' ? '⚠' : '·';
+  const confClass = 'conf-' + signal.confidence;
+  const loc = signal.location.line
+    ? `${signal.location.file}:${signal.location.line}`
+    : signal.location.file;
+
+  return `
+    <div class="signal-item ${severityClass}">
+      <span class="signal-icon">${icon}</span>
+      <div class="signal-body">
+        <div class="signal-desc">${escHtml(signal.description)}</div>
+        <div class="signal-loc">${escHtml(loc)}</div>
+        ${signal.suggestion ? `<div class="signal-suggestion">→ ${escHtml(signal.suggestion)}</div>` : ''}
+      </div>
+      <div class="confidence-dot ${confClass}" title="Confidence: ${signal.confidence}"></div>
+    </div>
+  `;
+}
+
+function toggleCategory(id) {
+  document.getElementById('cat-' + id)?.classList.toggle('collapsed');
+}
+
+// ---------------------------------------------------------------------------
+// Render — migration result
+// ---------------------------------------------------------------------------
+function renderMigrationResult(result) {
+  const container = document.getElementById('results-area');
+  const ok = result.success;
+
+  const existingReport = container.querySelector('.scan-header');
+
+  let html = `
+    <div class="fade-in" style="border:1px solid ${ok ? 'var(--green-dim)' : 'rgba(255,82,82,0.3)'};
+      border-radius:var(--radius);padding:1rem 1.25rem;
+      background:${ok ? 'var(--green-glow)' : 'rgba(255,82,82,0.05)'}">
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem">
+        <span style="font-size:1.1rem;color:${ok ? 'var(--green)' : 'var(--red)'}">${ok ? '✓' : '✗'}</span>
+        <span style="font-size:14px;color:${ok ? 'var(--green)' : 'var(--red)'}">
+          Migration ${ok ? 'complete' : 'failed'}${result.outputResult?.dryRun ? ' (dry run)' : ''}
+        </span>
+        <span style="margin-left:auto;font-size:10px;color:var(--text-dim)">${result.duration}ms</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;font-size:11px;color:var(--text-dim)">
+        <span>Platform</span>       <span style="color:var(--text)">${result.platform}</span>
+        <span>Target</span>         <span style="color:var(--text)">${result.targetAdapter}</span>
+        <span>Files written</span>  <span style="color:var(--text)">${result.outputResult?.written?.length ?? 0}</span>
+        <span>Transforms</span>     <span style="color:var(--text)">${result.transformLog?.length ?? 0} applied</span>
+      </div>
+      ${ok && !state.dryRun ? `
+        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:11px;color:var(--text-dim)">
+          Next steps:<br>
+          <span style="color:var(--green)">cd ./migrated-output && npm install && npm run dev</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  // Prepend to existing scan results if present
+  if (existingReport) {
+    existingReport.parentElement.insertAdjacentHTML('afterbegin', html);
+  } else {
+    container.innerHTML = html;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Render — transform plan (right sidebar)
+// ---------------------------------------------------------------------------
+const KNOWN_TRANSFORMS = [
+  { id: 'lovable.remove-tagger',            name: 'Remove lovable-tagger',     desc: 'Cleans build config' },
+  { id: 'lovable.abstract-supabase-client', name: 'Abstract Supabase client',  desc: 'Moves credentials to env' },
+  { id: 'lovable.remove-env-bleed',         name: 'Clean env variables',       desc: 'Renames proprietary env vars' },
+];
+
+function renderTransformPlan(report) {
+  const container = document.getElementById('transform-list');
+  const hasSignals = report?.signals?.length > 0;
+
+  const transforms = KNOWN_TRANSFORMS.map(t => ({
+    ...t,
+    relevant: hasSignals,
+    status: 'pending',
+  }));
+
+  container.innerHTML = transforms.map(t => `
+    <div class="transform-item fade-in" id="tf-${t.id.replace(/\./g, '-')}">
+      <div class="transform-header">
+        <span class="transform-status ts-${t.relevant ? 'pending' : 'skipped'}"></span>
+        <span class="transform-name">${t.name}</span>
+      </div>
+      <div class="transform-detail">${t.desc}</div>
+    </div>
+  `).join('');
+}
+
+function markTransformRunning(step) {
+  // Map progress step names to transform IDs roughly
+  document.querySelectorAll('.transform-status').forEach(dot => {
+    if (dot.classList.contains('ts-pending')) {
+      dot.classList.remove('ts-pending');
+      dot.classList.add('ts-running');
+      return;
+    }
+  });
+}
+
+function updateTransformPlanFromLog(log = []) {
+  for (const entry of log) {
+    const id = 'tf-' + entry.transformId.replace(/\./g, '-');
+    const item = document.getElementById(id);
+    if (!item) continue;
+    const dot = item.querySelector('.transform-status');
+    const dur = item.querySelector('.transform-dur');
+    if (dot) {
+      dot.className = 'transform-status ts-' + (entry.applied ? 'done' : entry.error ? 'error' : 'skipped');
+    }
+    if (!dur && entry.duration) {
+      item.querySelector('.transform-header').insertAdjacentHTML(
+        'beforeend', `<span class="transform-dur">${entry.duration}ms</span>`
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Progress bar
+// ---------------------------------------------------------------------------
+let progressEl = null;
+
+function showProgress(label, pct) {
+  const area = document.getElementById('results-area');
+  if (progressEl) { hideProgress(); }
+
+  progressEl = document.createElement('div');
+  progressEl.id = 'progress-panel';
+  progressEl.className = 'fade-in';
+  progressEl.innerHTML = `
+    <div class="progress-label">
+      <span id="progress-step" class="progress-step">${label}</span>
+      <span id="progress-pct">${pct}%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-fill" style="width:${pct}%"></div>
+    </div>
+    <div class="progress-log" id="progress-log"></div>
+  `;
+  area.prepend(progressEl);
+}
+
+function updateProgress(label, pct) {
+  const step = document.getElementById('progress-step');
+  const pctEl = document.getElementById('progress-pct');
+  const fill = document.getElementById('progress-fill');
+  if (step) step.textContent = label;
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (fill) fill.style.width = pct + '%';
+  appendLog(label, 'ok');
+}
+
+function hideProgress() {
+  progressEl?.remove();
+  progressEl = null;
+}
+
+function appendLog(msg, type = 'ok') {
+  const log = document.getElementById('progress-log');
+  if (!log) return;
+  const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">${now}</span><span class="log-msg ${type}">${escHtml(msg)}</span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+function showResultsArea() {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results-area').style.display = 'flex';
+  document.getElementById('results-area').style.flexDirection = 'column';
+  document.getElementById('results-area').style.gap = '0.75rem';
+}
+
+function clearResults() {
+  document.getElementById('results-area').innerHTML = '';
+}
+
+function showError(msg) {
+  const area = document.getElementById('results-area');
+  const el = document.createElement('div');
+  el.className = 'fade-in';
+  el.style.cssText = 'border:1px solid rgba(255,82,82,0.3);border-radius:3px;padding:0.75rem 1rem;color:var(--red);font-size:12px';
+  el.textContent = '✗ ' + msg;
+  area.prepend(el);
+}
+
+function logToResults(type, msg) {
+  showResultsArea();
+  appendLog(msg, type);
+}
+
+async function buildSourcePayload() {
+  const { projectSource } = state;
+  if (!projectSource) throw new Error('No source loaded');
+  // For now, pass the path/url as-is. ZIP handling to be wired to BrowserRuntimeAdapter.
+  if (projectSource.type === 'zip') return projectSource.name;
+  if (projectSource.type === 'github') return projectSource.url;
+  if (projectSource.type === 'url') return projectSource.url;
+  if (projectSource.type === 'fs') return projectSource.name;
+  return projectSource;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+</script>
+</body>
+</html>
