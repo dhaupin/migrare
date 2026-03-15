@@ -1,0 +1,38 @@
+{
+  "name": "migrare",
+  "version": "0.1.0",
+  "description": "Platform-agnostic migration layer for vibe-code platforms (Lovable, Bolt, Replit, etc.)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "migrare": "./dist/cli/main.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build":        "tsc && npm run build:web",
+    "build:core":   "tsc",
+    "build:web":    "cd web && npm install && npm run build",
+    "dev":          "tsc --watch",
+    "dev:web":      "cd web && npm run dev",
+    "start":        "node dist/cli/main.js",
+    "prepublishOnly": "npm run build",
+    "test":         "node --experimental-vm-modules node_modules/.bin/jest",
+    "lint":         "eslint src/**/*.ts"
+  },
+  "keywords": ["migration", "lovable", "bolt", "replit", "vibe-coding", "vendor-lock-in"],
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}
