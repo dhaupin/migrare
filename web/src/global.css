@@ -1,0 +1,62 @@
+/* global.css — base styles for migrare web */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:          #080c08;
+  --bg-1:        #0d120d;
+  --bg-2:        #111711;
+  --bg-3:        #161e16;
+  --border:      #1e2a1e;
+  --border-hi:   #2a3f2a;
+  --green:       #00e676;
+  --green-dim:   #00a152;
+  --green-glow:  rgba(0, 230, 118, 0.08);
+  --green-glow2: rgba(0, 230, 118, 0.15);
+  --text:        #c8d8c8;
+  --text-dim:    #5a7a5a;
+  --text-muted:  #3a4f3a;
+  --yellow:      #ffd54f;
+  --red:         #ff5252;
+  --cyan:        #40c4ff;
+  --mono:        'IBM Plex Mono', 'Fira Code', monospace;
+  --sans:        'IBM Plex Sans', system-ui, sans-serif;
+  --radius:      3px;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 230, 118, 0.006) 2px,
+    rgba(0, 230, 118, 0.006) 4px
+  );
+}
+
+a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
