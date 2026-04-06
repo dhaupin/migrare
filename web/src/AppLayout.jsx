@@ -1,10 +1,7 @@
 // AppLayout.jsx — Prestruct critical rule: NO BrowserRouter import here.
-// BrowserRouter lives only in App.jsx (client entry) and main.jsx.
-// This file is loaded by the prerender script via ssrLoadModule with StaticRouter.
-// Do not add inline <style> tags — use the external global.css import instead.
 import React, { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import "./global.css";
+import "./design.css";
 import Home from "./pages/Home.jsx";
 import MigrateApp from "./pages/MigrateApp.jsx";
 
