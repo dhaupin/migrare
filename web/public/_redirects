@@ -1,0 +1,7 @@
+# Cloudflare Pages redirects for migrare.creadev.org
+# SPA fallback (/* /index.html 200) is intentionally absent.
+# Including it causes infinite redirect loops once prerendering is active.
+# CF Pages serves prerendered index.html files directly per route.
+
+# Redirect bare /app/ trailing slash variant (CF Pages handles both natively)
+/app/ /app 301

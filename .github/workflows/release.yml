@@ -1,0 +1,66 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: install core deps
+        run: npm install
+
+      - name: build core
+        run: npm run build:core
+
+      - name: install web deps
+        run: cd web && npm install
+
+      - name: build web
+        run: cd web && npm run build
+
+      - name: zip web dist
+        run: |
+          cd web
+          zip -r ../migrare-web-${{ github.ref_name }}.zip dist/
+
+      - name: zip source
+        run: |
+          zip -r migrare-src-${{ github.ref_name }}.zip \
+            src/ web/src/ web/scripts/ web/public/ \
+            functions/ \
+            package.json web/package.json web/vite.config.js web/ssr.config.js \
+            tsconfig.json \
+            LICENSE README.md CHANGELOG.md AGENTS.md \
+            .gitignore \
+            --exclude "*/node_modules/*" --exclude "*/dist/*"
+
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "migrare ${{ github.ref_name }}"
+          body: |
+            See [CHANGELOG.md](https://github.com/dhaupin/migrare/blob/main/CHANGELOG.md) for what's in this release.
+
+            **Web tool:** https://migrare.creadev.org
+            **Source:** https://github.com/dhaupin/migrare
+          files: |
+            migrare-web-${{ github.ref_name }}.zip
+            migrare-src-${{ github.ref_name }}.zip
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

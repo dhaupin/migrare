@@ -1,6 +1,29 @@
+# dependencies
 node_modules/
+web/node_modules/
+
+# build output
 dist/
-*.js.map
+web/dist/
+
+# env files — never commit secrets
 .env
 .env.local
+.env.*.local
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+
+# Cloudflare
+.wrangler/

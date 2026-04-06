@@ -1,6 +1,6 @@
 {
   "name": "migrare",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Platform-agnostic migration layer for vibe-code platforms (Lovable, Bolt, Replit, etc.)",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,12 +24,18 @@
     "dev":          "tsc --watch",
     "dev:web":      "cd web && npm run dev",
     "start":        "node dist/cli/main.js",
-    "prepublishOnly": "npm run build",
-    "test":         "node --experimental-vm-modules node_modules/.bin/jest",
-    "lint":         "eslint src/**/*.ts"
+    "prepublishOnly": "npm run build"
   },
   "keywords": ["migration", "lovable", "bolt", "replit", "vibe-coding", "vendor-lock-in"],
   "license": "MIT",
+  "homepage": "https://migrare.creadev.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dhaupin/migrare"
+  },
+  "bugs": {
+    "url": "https://github.com/dhaupin/migrare/issues"
+  },
   "dependencies": {},
   "devDependencies": {
     "typescript": "^5.4.0",

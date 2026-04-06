@@ -1,14 +1,23 @@
 {
   "name": "migrare-web",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
-  "description": "migrare web UI",
+  "type": "module",
+  "description": "migrare web UI — escape vendor lock-in",
   "scripts": {
     "dev": "vite --port 5173",
-    "build": "vite build",
+    "build": "vite build && node scripts/inject-brand.js && node scripts/prerender.js",
+    "build:vite": "vite build",
     "preview": "vite preview"
   },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-router-dom": "^6.26.0"
+  },
   "devDependencies": {
-    "vite": "^5.0.0"
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^5.4.0"
   }
 }
