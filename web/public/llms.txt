@@ -1,0 +1,102 @@
+# migrare
+
+> Escape vendor lock-in from vibe-coding platforms (Lovable, Bolt, Replit).
+
+migrare is an open-source migration tool. It scans projects exported from vibe-coding
+platforms for vendor lock-in signals, then applies automated transforms to produce a
+clean, portable, self-owned codebase. MIT licensed. No auth required.
+
+Source: https://github.com/dhaupin/migrare
+Web tool: https://migrare.creadev.org/app
+Agent docs: https://migrare.creadev.org/for-ai
+API spec: https://migrare.creadev.org/api/spec
+
+## API
+
+All endpoints are at https://migrare.creadev.org. Stateless, no auth, JSON in/out.
+POST bodies must be application/json. Responses are always JSON.
+
+### GET /api/health
+Returns { ok: true, version: string }. Use to confirm the API is reachable.
+
+### POST /api/scan
+Scans a zip for lock-in signals. Read-only — no side effects.
+
+Request body:
+  { source: { zip: string (base64), name: string } }
+
+Response:
+  {
+    platform: "lovable" | "unknown",
+    confidence: "high" | "medium" | "low",
+    fileCount: number,
+    detectionSignals: string[],
+    signals: [
+      {
+        id: string,
+        category: "build-config" | "state-entanglement" | "auth-coupling"
+                | "environment-bleed" | "proprietary-api",
+        severity: "error" | "warning" | "info",
+        confidence: "high" | "medium" | "low",
+        location: { file: string, line?: number },
+        description: string,
+        suggestion: string
+      }
+    ],
+    summary: {
+      bySeverity: { error: number, warning: number, info: number },
+      migrationComplexity: "straightforward" | "moderate" | "requires-manual",
+      totalSignals: number
+    }
+  }
+
+### POST /api/migrate
+Applies transforms and returns modified file contents.
+
+Request body:
+  {
+    source: { zip: string (base64), name: string },
+    dryRun?: boolean,       // default false
+    targetAdapter?: "vite" | "nextjs"
+  }
+
+Response adds to scan shape:
+  {
+    ...scan fields...,
+    dryRun: boolean,
+    duration: number (ms),
+    transformLog: [ { transform: string, file: string, action: "modified"|"created"|"deleted" } ],
+    files: [ { path: string, content: string } ],  // only modified files
+    errors: string[]
+  }
+
+## Recommended agent pattern
+
+1. Call /api/scan — get the signal report before touching any files.
+2. Check summary.migrationComplexity. If "requires-manual", surface to a human.
+3. Call /api/migrate with dryRun: true — review the transformLog.
+4. Call /api/migrate with dryRun: false — get file diffs in the files array.
+5. Write files via your own tools. Always include a human checkpoint before commit.
+
+Do not automate migrate → commit without a human review step.
+The files array is a suggested diff, not an instruction to overwrite blindly.
+
+## Supported platforms
+
+- Lovable (lovable.dev): ready
+- Bolt.new: planned
+- Replit: planned
+- v0 / Vercel: planned
+
+## Transforms (Lovable)
+
+- remove-lovable-tagger: removes lovable-tagger from vite.config and package.json
+- abstract-supabase-client: moves hardcoded Supabase credentials to env vars
+- remove-env-bleed: renames GPT_ENGINEER_* and LOVABLE_* env vars to VITE_*
+
+## Notes for agents
+
+- Zip size: handles typical Lovable exports (< 5 MB unzipped). Large monorepos: use CLI.
+- Stateless: no session, no job ID, no polling. Both endpoints return synchronously.
+- No auth: open API. Add delays between requests if calling in a loop.
+- migrare has no git access. It cannot commit, push, or open PRs on your behalf.

@@ -49,6 +49,7 @@ export default function Home() {
           migrare
         </span>
         <div className="nav-links">
+          <Link to="/for-ai" className="nav-link">for agents</Link>
           <a
             href="https://github.com/dhaupin/migrare"
             target="_blank"

@@ -323,6 +323,100 @@ async function handleHealth() {
   return Response.json({ ok: true, version: "0.0.1" });
 }
 
+async function handleSpec() {
+  return Response.json({
+    version: "0.0.1",
+    baseUrl: "https://migrare.creadev.org",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/health",
+        description: "Heartbeat. Confirm the API is reachable.",
+        response: { ok: "boolean", version: "string" },
+      },
+      {
+        method: "GET",
+        path: "/api/spec",
+        description: "This document. Machine-readable API description.",
+      },
+      {
+        method: "POST",
+        path: "/api/scan",
+        description: "Scan a zip for lock-in signals. Read-only, no side effects.",
+        request: {
+          source: {
+            zip: "string (base64-encoded .zip bytes)",
+            name: "string (filename, e.g. my-app.zip)",
+          },
+        },
+        response: {
+          platform: "string",
+          confidence: "high | medium | low",
+          fileCount: "number",
+          detectionSignals: "string[]",
+          signals: [{
+            id: "string",
+            platform: "string",
+            category: "build-config | state-entanglement | auth-coupling | environment-bleed | proprietary-api",
+            severity: "error | warning | info",
+            confidence: "high | medium | low",
+            location: { file: "string", line: "number (optional)" },
+            description: "string",
+            suggestion: "string",
+          }],
+          summary: {
+            bySeverity: { error: "number", warning: "number", info: "number" },
+            byCategory: "Record<string, number>",
+            migrationComplexity: "straightforward | moderate | requires-manual",
+            totalSignals: "number",
+          },
+        },
+      },
+      {
+        method: "POST",
+        path: "/api/migrate",
+        description: "Apply transforms. Returns modified file contents as {path, content} pairs. Treat as a diff — always review before writing.",
+        request: {
+          source: {
+            zip: "string (base64-encoded .zip bytes)",
+            name: "string",
+          },
+          dryRun: "boolean (optional, default false)",
+          targetAdapter: "vite | nextjs (optional, default vite)",
+        },
+        response: {
+          "...": "all fields from /api/scan response, plus:",
+          dryRun: "boolean",
+          duration: "number (ms)",
+          transformLog: [{
+            transform: "string",
+            file: "string",
+            action: "modified | created | deleted",
+            meta: "object (optional)",
+          }],
+          files: [{ path: "string", content: "string" }],
+          errors: "string[]",
+        },
+        notes: [
+          "files[] contains only modified files, not the full project.",
+          "dryRun: true returns transformLog but empty files[].",
+          "Do not automate migrate -> commit without a human review step.",
+        ],
+      },
+    ],
+    platforms: [
+      { id: "lovable", status: "ready", transforms: ["remove-lovable-tagger", "abstract-supabase-client", "remove-env-bleed"] },
+      { id: "bolt",    status: "planned" },
+      { id: "replit",  status: "planned" },
+    ],
+    links: {
+      llmsTxt:  "https://migrare.creadev.org/llms.txt",
+      forAgents: "https://migrare.creadev.org/for-ai",
+      source:   "https://github.com/dhaupin/migrare",
+    },
+  });
+}
+
 async function handleScan(request) {
   const body = await request.json();
   const { source } = body;
@@ -420,6 +514,8 @@ export async function onRequest({ request }) {
 
     if (path === "/api/health" && method === "GET") {
       response = await handleHealth();
+    } else if (path === "/api/spec" && method === "GET") {
+      response = await handleSpec();
     } else if (path === "/api/scan" && method === "POST") {
       response = await handleScan(request);
     } else if (path === "/api/migrate" && method === "POST") {
