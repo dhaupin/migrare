@@ -160,8 +160,8 @@ export default function ForAI() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div>
-            <p className="t-label" style={{ marginBottom: "var(--sp-2)" }}>request body</p>
+          <div className="code-block">
+            <p className="code-block-label">request body</p>
             <pre><code>{`{
   source: {
     zip:  string,   // base64-encoded .zip bytes
@@ -170,13 +170,13 @@ export default function ForAI() {
 }`}</code></pre>
           </div>
 
-          <div>
-            <p className="t-label" style={{ marginBottom: "var(--sp-2)" }}>response shape</p>
+          <div className="code-block">
+            <p className="code-block-label">response shape</p>
             <pre><code>{scanShape}</code></pre>
           </div>
 
-          <div>
-            <p className="t-label" style={{ marginBottom: "var(--sp-2)" }}>pseudo-code pattern</p>
+          <div className="code-block">
+            <p className="code-block-label">pseudo-code pattern</p>
             <pre><code>{`// read zip into base64
 const zip = fs.readFileSync("my-app.zip");
 const b64 = zip.toString("base64");
@@ -210,8 +210,8 @@ for (const signal of report.signals) {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div>
-            <p className="t-label" style={{ marginBottom: "var(--sp-2)" }}>request body</p>
+          <div className="code-block">
+            <p className="code-block-label">request body</p>
             <pre><code>{`{
   source: {
     zip:  string,   // base64-encoded .zip bytes
@@ -222,13 +222,13 @@ for (const signal of report.signals) {
 }`}</code></pre>
           </div>
 
-          <div>
-            <p className="t-label" style={{ marginBottom: "var(--sp-2)" }}>response shape</p>
+          <div className="code-block">
+            <p className="code-block-label">response shape</p>
             <pre><code>{migrateShape}</code></pre>
           </div>
 
-          <div>
-            <p className="t-label" style={{ marginBottom: "var(--sp-2)" }}>recommended agent pattern</p>
+          <div className="code-block">
+            <p className="code-block-label">recommended agent pattern</p>
             <pre><code>{`// 1. scan first — understand what you're dealing with
 const scan = await callScan(zip);
 if (scan.summary.migrationComplexity === "requires-manual") {
