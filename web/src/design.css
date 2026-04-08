@@ -42,17 +42,17 @@
   --border-hi:    #28402a;
   --border-focus: #00a152;
 
-  /* --- green accent --- */
-  --green:        #00e676;
-  --green-dim:    #00a152;
-  --green-faint:  rgba(0, 230, 118, 0.055);
-  --green-glow:   rgba(0, 230, 118, 0.13);
-  --green-glow2:  rgba(0, 230, 118, 0.24);
+  /* --- green accent — rooted to #00e628 --- */
+  --green:        #00e628;
+  --green-dim:    #188a2c;
+  --green-faint:  rgba(0, 230, 40, 0.06);
+  --green-glow:   rgba(0, 230, 40, 0.13);
+  --green-glow2:  rgba(0, 230, 40, 0.24);
 
   /* --- text --- */
-  --text:         #c4d4c4;
-  --text-dim:     #527052;
-  --text-muted:   #344834;
+  --text:         #d0e2d0;
+  --text-dim:     #739e73;
+  --text-muted:   #496649;
   --text-inv:     #070b07;
 
   /* --- semantic colors --- */
@@ -73,12 +73,12 @@
   --sans: 'IBM Plex Sans', system-ui, sans-serif;
 
   /* --- type scale --- */
-  --t-2xs:  9px;
-  --t-xs:   10px;
-  --t-sm:   11px;
-  --t-base: 13px;
-  --t-md:   14px;
-  --t-lg:   16px;
+  --t-2xs:  10px;
+  --t-xs:   11px;
+  --t-sm:   12px;
+  --t-base: 14px;
+  --t-md:   15px;
+  --t-lg:   17px;
   --t-xl:   18px;
   --t-2xl:  clamp(1.5rem, 4vw, 2.2rem);
   --t-3xl:  clamp(1.9rem, 5.5vw, 3.2rem);
@@ -417,6 +417,18 @@ pre .num { color: var(--yellow); }
   transition: color var(--tf) var(--ease);
 }
 .nav-link:hover { color: var(--text); text-decoration: none; }
+
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  transition: color var(--tf) var(--ease);
+  padding: 4px;
+  border-radius: var(--r);
+}
+.nav-icon:hover { color: var(--text); text-decoration: none; }
+.nav-icon svg { width: 18px; height: 18px; fill: currentColor; }
 
 .nav-cta {
   color: var(--green);
@@ -758,6 +770,8 @@ pre .num { color: var(--yellow); }
   flex-direction: column;
   gap: var(--s3);
   min-height: 0;
+  /* Mobile: cap height so sidebar doesn't push panel off screen */
+  max-height: 60vh;
 }
 
 /* help block */
@@ -825,31 +839,28 @@ pre .num { color: var(--yellow); }
 .tooltip-trigger:hover { border-color: var(--green-dim); color: var(--green); }
 
 .tooltip-content {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;          /* fixed avoids clipping by overflow:hidden ancestors */
   background: var(--tooltip-bg);
   border: 1px solid var(--tooltip-border);
   border-radius: var(--r-md);
-  padding: var(--s2) var(--s3);
+  padding: var(--s2) var(--s4);
   font-size: var(--t-xs);
   font-family: var(--sans);
   color: var(--text-dim);
-  line-height: 1.5;
-  white-space: nowrap;
-  max-width: 220px;
-  white-space: normal;
+  line-height: 1.6;
+  width: 260px;             /* wider than before */
+  max-width: calc(100vw - 24px);
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
   transition: opacity var(--tf) var(--ease), visibility var(--tf) var(--ease);
   transition-delay: 0ms;
-  z-index: 100;
-  box-shadow: var(--shadow-md);
+  z-index: 9999;
+  box-shadow: var(--shadow-lg);
+  /* positioned by JS — see Tip component */
 }
 
-/* arrow */
+/* arrow points down (tooltip above trigger) */
 .tooltip-content::after {
   content: '';
   position: absolute;
@@ -859,34 +870,43 @@ pre .num { color: var(--yellow); }
   border: 5px solid transparent;
   border-top-color: var(--tooltip-border);
 }
+.tooltip-content.arrow-left::after  { left: 16px; transform: none; }
+.tooltip-content.arrow-right::after { left: auto; right: 16px; transform: none; }
 
+/* arrow points up (tooltip below trigger) */
+.tooltip-content.below {
+  /* JS flips positioning when near top */
+}
+.tooltip-content.below::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--tooltip-border);
+}
+
+.tooltip.active .tooltip-content,
 .tooltip:hover .tooltip-content {
   opacity: 1;
   visibility: visible;
   transition-delay: var(--tooltip-delay);
 }
 
-/* right-anchored tooltip for items near right edge */
-.tooltip-right .tooltip-content {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-.tooltip-right .tooltip-content::after {
-  left: auto;
-  right: var(--s3);
-  transform: none;
+/* On touch devices: no hover, toggle via .active class set by JS */
+@media (hover: none) {
+  .tooltip:hover .tooltip-content {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .tooltip.active .tooltip-content {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0ms;
+  }
 }
 
-/* left-anchored */
-.tooltip-left .tooltip-content {
-  left: 0;
-  transform: none;
-}
-.tooltip-left .tooltip-content::after {
-  left: var(--s3);
-  transform: none;
-}
+/* legacy alignment modifiers kept for non-JS fallback */
+.tooltip-right .tooltip-content { right: 0; }
+.tooltip-left .tooltip-content  { left: 0; }
 
 /* ─── 16. LOADING ────────────────────────────────────────────────────────── */
 
@@ -1177,7 +1197,7 @@ pre .num { color: var(--yellow); }
     display: block;
   }
 
-  .panel-main { flex: 1; height: 100%; }
+  .panel-main { flex: 1; height: 100%; max-height: none; overflow-y: auto; }
   .app-shell  { height: 100vh; height: 100dvh; }
   .app-body   { height: calc(100vh - var(--topbar-h)); height: calc(100dvh - var(--topbar-h)); }
 
@@ -1200,4 +1220,57 @@ pre .num { color: var(--yellow); }
     transition-duration: 0.01ms !important;
   }
   .logo-dot { animation: none; }
+}
+
+/* ─── scan output block — homepage ──────────────────────────────────────── */
+/* Not a macOS window. Looks like actual terminal output.                   */
+
+.scan-output {
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  border-left: 2px solid var(--green-dim);
+  margin: 0 auto;
+}
+
+.scan-output-header {
+  padding: var(--s2) var(--s4);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+}
+
+.scan-output-body {
+  padding: var(--s4) var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-1);
+}
+
+/* ─── scan output block (homepage) ──────────────────────────────────────── */
+/* Raw CLI output feel — not a macOS window, not an AI chat box.            */
+
+.scan-output {
+  border-left: 2px solid var(--green-dim);
+  background: transparent;
+  margin-inline: auto;
+  padding: 0;
+  overflow: hidden;
+}
+
+.scan-output-header {
+  padding: var(--s2) var(--s4);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.scan-output-body {
+  padding: var(--s4) var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--t-sm);
+  line-height: 1.7;
 }
