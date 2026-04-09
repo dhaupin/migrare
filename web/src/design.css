@@ -559,7 +559,6 @@ pre .num { color: var(--yellow); }
   background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  overflow: hidden;
   transition: border-color var(--tb) var(--ease);
 }
 .card:hover       { border-color: var(--border-hi); }
@@ -809,6 +808,7 @@ pre .num { color: var(--yellow); }
 .terminal-title { margin-left: var(--s2); font-size: var(--t-xs); color: var(--text-muted); letter-spacing: 0.05em; }
 .terminal-body { padding: var(--s4) var(--s5); display: flex; flex-direction: column; gap: 5px; font-size: var(--t-sm); line-height: 1.65; }
 .term-line { display: flex; flex-wrap: wrap; gap: 0; align-items: baseline; }
+.term-line span { margin-right: 0.5em; }
 
 /* ─── 15. TOOLTIP ────────────────────────────────────────────────────────── */
 /* Usage: wrap trigger in .tooltip, add .tooltip-content sibling             */
