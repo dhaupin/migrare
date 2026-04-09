@@ -1,7 +1,4 @@
 // ssr.config.js — Prestruct SSR config
-// Engine reads this at build time to prerender routes and inject meta.
-// See: https://github.com/dhaupin/prestruct
-
 export default {
   siteUrl:       'https://migrare.creadev.org',
   siteName:      'migrare',
@@ -30,6 +27,15 @@ export default {
         description: 'Upload a ZIP from Lovable, scan for lock-in signals, apply automated transforms, and download a clean portable project.',
       },
     },
+    {
+      path:       '/for-ai',
+      priority:   '0.7',
+      changefreq: 'monthly',
+      meta: {
+        title:       'migrare for AI agents',
+        description: 'JSON API for AI agents and coding assistants. Call /api/scan to get a structured lock-in report. Stateless, no auth, returns immediately.',
+      },
+    },
   ],
 
   buildJsonLd() {
@@ -42,16 +48,8 @@ export default {
         description: 'Open-source migration tool for vibe-coded apps. Detect lock-in signals and migrate to a clean, self-owned codebase.',
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'Web',
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'USD',
-        },
-        author: {
-          '@type': 'Organization',
-          name:    'Creadev',
-          url:     'https://creadev.org',
-        },
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        author: { '@type': 'Organization', name: 'Creadev', url: 'https://creadev.org' },
       },
     ]
   },

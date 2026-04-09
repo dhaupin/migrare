@@ -2,32 +2,22 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import JSZip from "jszip";
 
-// API always relative — works local (proxied to :4242) and on Cloudflare Pages
+const GithubIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ width: 18, height: 18, fill: "currentColor", display: "block" }}>
+    <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+  </svg>
+);
+
 const API = "";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      // result is "data:...;base64,XXXX" — strip the prefix
-      const b64 = reader.result.split(",")[1];
-      resolve(b64);
-    };
+    reader.onload = () => resolve(reader.result.split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -35,55 +25,121 @@ async function fileToBase64(file) {
 
 async function downloadMigrationZip(result, originalName) {
   const zip = new JSZip();
-  const folderName = originalName.replace(/\.zip$/i, "") + "-migrated";
-  const folder = zip.folder(folderName);
-
-  for (const { path, content } of result.files) {
-    folder.file(path, content);
-  }
-
+  const name = originalName.replace(/\.zip$/i, "") + "-migrated";
+  const folder = zip.folder(name);
+  for (const { path, content } of result.files) folder.file(path, content);
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = folderName + ".zip";
-  a.click();
+  a.href = url; a.download = name + ".zip"; a.click();
   URL.revokeObjectURL(url);
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
+// ─── tooltip component ────────────────────────────────────────────────────────
+// Uses fixed positioning computed from trigger bounds — avoids overflow clipping.
+// Touch: tap to toggle, tap elsewhere to dismiss.
+
+function Tip({ text }) {
+  const [pos, setPos] = useState(null);
+  const [active, setActive] = useState(false);
+  const triggerRef = useRef();
+  const contentRef = useRef();
+
+  const position = () => {
+    const t = triggerRef.current;
+    const c = contentRef.current;
+    if (!t || !c) return;
+    const tr = t.getBoundingClientRect();
+    const cw = c.offsetWidth || 260;
+    const ch = c.offsetHeight || 60;
+    const vw = window.innerWidth;
+    const gap = 8;
+
+    // Preferred: above trigger
+    let top = tr.top - ch - gap;
+    let below = false;
+    if (top < 8) { top = tr.bottom + gap; below = true; }
+
+    // Horizontal: center on trigger, clamp to viewport
+    let left = tr.left + tr.width / 2 - cw / 2;
+    left = Math.max(8, Math.min(left, vw - cw - 8));
+
+    // Arrow offset relative to tooltip left
+    const arrowX = tr.left + tr.width / 2 - left;
+    let arrowCls = "";
+    if (arrowX < 20) arrowCls = "arrow-left";
+    else if (arrowX > cw - 20) arrowCls = "arrow-right";
+
+    setPos({ top, left, below, arrowCls });
+  };
+
+  const show = () => { position(); setActive(true); };
+  const hide = () => setActive(false);
+  const toggle = (e) => { e.stopPropagation(); active ? hide() : show(); };
+
+  useEffect(() => {
+    if (!active) return;
+    const close = () => hide();
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [active]);
+
+  return (
+    <span className={`tooltip ${active ? "active" : ""}`}>
+      <span
+        ref={triggerRef}
+        className="tooltip-trigger"
+        aria-label="help"
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onClick={toggle}
+        onFocus={show}
+        onBlur={hide}
+        tabIndex={0}
+      >?</span>
+      <span
+        ref={contentRef}
+        className={[
+          "tooltip-content",
+          pos?.below ? "below" : "",
+          pos?.arrowCls ?? "",
+        ].filter(Boolean).join(" ")}
+        style={pos ? { top: pos.top, left: pos.left, position: "fixed" } : undefined}
+      >{text}</span>
+    </span>
+  );
+}
+
+// ─── spinner component ────────────────────────────────────────────────────────
+
+function Spinner({ label, size = "" }) {
+  return (
+    <span className="spinner">
+      <span className={`spinner-ring ${size ? "spinner-ring-" + size : ""}`} />
+      {label && <span>{label}</span>}
+    </span>
+  );
+}
+
+// ─── sub-components ──────────────────────────────────────────────────────────
 
 function Topbar({ serverOk }) {
+  const dotCls = serverOk === null ? "" : serverOk ? "dot-online" : "dot-offline";
+  const statusText = serverOk === null ? "connecting…" : serverOk ? "api ready" : "api offline";
+
   return (
-    <div style={s.topbar}>
-      <div style={s.logo}>
-        <span style={s.logoDot} />
+    <div className="topbar">
+      <Link to="/" className="logo">
+        <span className="logo-dot" />
         migrare
-      </div>
-      <span style={s.tagline}>escape vendor lock-in</span>
-      <div style={s.topbarRight}>
-        <span
-          style={{
-            ...s.badge,
-            color: serverOk === null ? "var(--text-muted)" : serverOk ? "var(--green)" : "var(--red)",
-            borderColor: serverOk === null ? "var(--border)" : serverOk ? "var(--green-dim)" : "var(--red)",
-          }}
-        >
-          {serverOk === null ? "connecting…" : serverOk ? "● api ready" : "○ api offline"}
+      </Link>
+      <div className="topbar-right">
+        <span className="badge flex gap-2 items-center">
+          <span className={`status-dot ${dotCls}`} />
+          {statusText}
         </span>
-        <Link to="/" style={s.ghLink}>
-          ← home
-        </Link>
-        <a
-          href="https://github.com/dhaupin/migrare"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={s.ghLink}
-        >
-          GitHub ↗
-        </a>
+        <Link to="/" className="nav-link">← home</Link>
+        <a href="https://github.com/dhaupin/migrare" target="_blank" rel="noopener noreferrer" className="nav-icon" aria-label="GitHub repository"><GithubIcon /></a>
       </div>
     </div>
   );
@@ -94,116 +150,83 @@ function DropZone({ onFile, loadedFile }) {
   const inputRef = useRef();
 
   const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
+    e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file?.name.endsWith(".zip")) onFile(file);
   };
 
   return (
     <div
-      style={{
-        ...s.dropzone,
-        borderColor: dragOver ? "var(--green)" : loadedFile ? "var(--green-dim)" : "var(--border-hi)",
-        background: dragOver ? "var(--green-glow)" : "transparent",
-      }}
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      className={["dropzone", dragOver && "drag-over", loadedFile && "loaded"].filter(Boolean).join(" ")}
+      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current.click()}
+      role="button" tabIndex={0}
+      onKeyDown={e => e.key === "Enter" && inputRef.current.click()}
+      aria-label="Upload zip file"
     >
       {loadedFile ? (
         <>
-          <div style={{ fontSize: "18px", color: "var(--green)" }}>✓</div>
-          <div style={{ color: "var(--text)", fontSize: "12px" }}>{loadedFile.name}</div>
-          <div style={{ color: "var(--text-dim)", fontSize: "10px" }}>
-            {(loadedFile.size / 1024).toFixed(1)} KB · click to replace
-          </div>
+          <span className="t-green" style={{ fontSize: 20 }}>✓</span>
+          <span className="t-white" style={{ fontSize: 12 }}>{loadedFile.name}</span>
+          <span className="t-muted t-xs">{(loadedFile.size / 1024).toFixed(1)} KB · tap to replace</span>
         </>
       ) : (
         <>
-          <div style={{ fontSize: "22px", color: "var(--text-muted)" }}>⬇</div>
-          <div style={{ color: "var(--text-dim)", fontSize: "12px" }}>Drop ZIP export</div>
-          <div style={{ color: "var(--text-muted)", fontSize: "10px" }}>or click to browse</div>
+          <span className="t-muted" style={{ fontSize: 22 }}>⬇</span>
+          <span className="t-dim" style={{ fontSize: 12 }}>Drop or tap to upload ZIP</span>
+          <span className="t-muted t-xs">.zip exports from Lovable, Bolt, Replit</span>
         </>
       )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".zip"
-        style={{ display: "none" }}
-        onChange={(e) => { if (e.target.files[0]) onFile(e.target.files[0]); }}
-      />
+      <input ref={inputRef} type="file" accept=".zip" style={{ display: "none" }}
+        onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); }} />
     </div>
   );
 }
 
 function ScanReport({ report }) {
   if (!report) return null;
-
-  const severityColor = { error: "var(--red)", warning: "var(--yellow)", info: "var(--cyan)" };
-  const severityIcon = { error: "✗", warning: "⚠", info: "·" };
-  const complexityColor = {
-    straightforward: "var(--green)",
-    moderate: "var(--yellow)",
-    "requires-manual": "var(--red)",
-  };
+  const sevGlyph = { error: "✗", warning: "⚠", info: "·" };
+  const sevCls   = { error: "t-red", warning: "t-yellow", info: "t-cyan" };
+  const complexCls = { straightforward: "badge-green", moderate: "badge-yellow", "requires-manual": "badge-red" };
 
   return (
-    <div style={s.reportBlock}>
-      <div style={s.reportHeader}>
-        <span style={s.platformBadge}>{report.platform}</span>
-        <span
-          style={{
-            ...s.complexityBadge,
-            color: complexityColor[report.summary?.migrationComplexity] ?? "var(--text-dim)",
-          }}
-        >
-          {report.summary?.migrationComplexity ?? "—"}
+    <div className="card fade-up">
+      <div className="card-header">
+        <span className="badge badge-green">{report.platform}</span>
+        <span className={`badge ${complexCls[report.summary?.migrationComplexity] ?? ""}`}>
+          {report.summary?.migrationComplexity}
         </span>
-        <div style={s.statRow}>
-          <span style={{ color: "var(--red)" }}>
-            ✗ {report.summary?.bySeverity?.error ?? 0}
-          </span>
-          <span style={{ color: "var(--yellow)" }}>
-            ⚠ {report.summary?.bySeverity?.warning ?? 0}
-          </span>
-          <span style={{ color: "var(--cyan)" }}>
-            · {report.summary?.bySeverity?.info ?? 0}
-          </span>
+        <div className="stat-row">
+          <span className="t-red">✗ {report.summary?.bySeverity?.error ?? 0}</span>
+          <span className="t-yellow">⚠ {report.summary?.bySeverity?.warning ?? 0}</span>
+          <span className="t-cyan">· {report.summary?.bySeverity?.info ?? 0}</span>
         </div>
       </div>
 
       {report.detectionSignals?.length > 0 && (
-        <div style={s.detectionSignals}>
-          <span style={s.dimLabel}>detected via:</span>
-          {report.detectionSignals.map((sig) => (
-            <span key={sig} style={s.sigTag}>{sig}</span>
-          ))}
+        <div className="flex flex-wrap gap-2 items-center"
+          style={{ padding: "8px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-1)" }}>
+          <span className="t-label">via:</span>
+          {report.detectionSignals.map(s => <span key={s} className="sig-tag">{s}</span>)}
         </div>
       )}
 
-      <div style={s.signalList}>
+      <div style={{ padding: "8px 16px", display: "flex", flexDirection: "column" }}>
         {report.signals?.length === 0 && (
-          <div style={s.logLine}>
-            <span style={{ color: "var(--green)" }}>✓</span>
-            <span style={s.logText}>No lock-in signals detected — project looks portable</span>
+          <div className="log-line">
+            <span className="log-glyph t-green">✓</span>
+            <span className="log-text">No lock-in signals found — project looks portable</span>
           </div>
         )}
-        {(report.signals ?? []).map((sig) => (
-          <div key={sig.id} style={s.signalItem}>
-            <span style={{ color: severityColor[sig.severity] ?? "var(--text-dim)" }}>
-              {severityIcon[sig.severity] ?? "·"}
-            </span>
-            <div style={s.signalBody}>
-              <div style={s.signalFile}>
-                {sig.location?.file}
-                {sig.location?.line ? `:${sig.location.line}` : ""}
-              </div>
-              <div style={s.signalDesc}>{sig.description}</div>
-              {sig.suggestion && (
-                <div style={s.signalSug}>→ {sig.suggestion}</div>
-              )}
+        {(report.signals ?? []).map(sig => (
+          <div key={sig.id} className="signal-item">
+            <span className={`signal-glyph ${sevCls[sig.severity]}`}>{sevGlyph[sig.severity]}</span>
+            <div className="signal-body">
+              <span className="signal-file">{sig.location?.file}{sig.location?.line ? `:${sig.location.line}` : ""}</span>
+              <span className="signal-desc">{sig.description}</span>
+              {sig.suggestion && <span className="signal-sug">→ {sig.suggestion}</span>}
             </div>
           </div>
         ))}
@@ -214,169 +237,155 @@ function ScanReport({ report }) {
 
 function MigrationResult({ result, onDownload }) {
   if (!result) return null;
-
   return (
-    <div style={s.reportBlock}>
-      <div style={s.reportHeader}>
-        <span style={{ color: "var(--green)", fontSize: "13px" }}>
-          ✓ migration complete
-        </span>
-        <span style={s.dimLabel}>{result.duration}ms</span>
-        {result.dryRun && <span style={s.dryRunBadge}>dry run</span>}
+    <div className="card fade-up">
+      <div className="card-header">
+        <span className="t-green t-sm">✓ migration complete</span>
+        <span className="t-muted t-xs">{result.duration}ms</span>
+        {result.dryRun && <span className="badge badge-yellow">preview only</span>}
       </div>
-
       {result.transformLog?.length > 0 && (
-        <div style={s.signalList}>
-          <div style={{ ...s.dimLabel, marginBottom: "8px" }}>transforms applied:</div>
+        <div className="card-body flex flex-col gap-2">
+          <span className="t-label mb-2">transforms applied</span>
           {result.transformLog.map((entry, i) => (
-            <div key={i} style={s.logLine}>
-              <span style={{ color: "var(--green)" }}>▸</span>
-              <span style={s.logText}>
-                <span style={{ color: "var(--cyan)" }}>{entry.transform}</span>
+            <div key={i} className="log-line">
+              <span className="log-glyph t-green">▸</span>
+              <span className="log-text">
+                <span className="t-cyan">{entry.transform}</span>
                 {" — "}
-                <span style={{ color: "var(--text-dim)" }}>{entry.file}</span>
+                <span className="t-dim">{entry.file}</span>
                 {" "}
-                <span style={{ color: "var(--text-muted)" }}>({entry.action})</span>
+                <span className="t-muted">({entry.action})</span>
               </span>
             </div>
           ))}
         </div>
       )}
-
       {result.files?.length > 0 && !result.dryRun && (
-        <button style={s.downloadBtn} onClick={onDownload}>
-          ⬇ download migrated project ({result.files.length} files)
-        </button>
+        <div className="card-body">
+          <button className="btn btn-primary btn-block btn-center" onClick={onDownload}>
+            ⬇ download migrated project ({result.files.length} files)
+          </button>
+        </div>
       )}
-
       {result.dryRun && (
-        <div style={{ ...s.logLine, marginTop: "8px" }}>
-          <span style={{ color: "var(--yellow)" }}>◈</span>
-          <span style={s.logText}>
-            Dry run — no changes written. Uncheck "dry run" to apply transforms.
-          </span>
+        <div className="card-body">
+          <div className="log-line">
+            <span className="log-glyph t-yellow">◈</span>
+            <span className="log-text">
+              Preview only — transforms were computed but no files produced.
+              Use "migrate" to get the downloadable output.
+            </span>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main tool page
-// ---------------------------------------------------------------------------
+// ─── main ────────────────────────────────────────────────────────────────────
 
 export default function MigrateApp() {
-  const [serverOk, setServerOk] = useState(null);
-  const [loadedFile, setLoadedFile] = useState(null);
-  const [logs, setLogs] = useState([]);
-  const [progress, setProgress] = useState(null); // { msg, pct }
-  const [scanReport, setScanReport] = useState(null);
-  const [migrationResult, setMigrationResult] = useState(null);
+  const [serverOk, setServerOk]           = useState(null);
+  const [loadedFile, setLoadedFile]       = useState(null);
+  const [logs, setLogs]                   = useState([]);
+  const [progress, setProgress]           = useState(null);
+  const [scanReport, setScanReport]       = useState(null);
+  const [migResult, setMigResult]         = useState(null);
   const [selectedTarget, setSelectedTarget] = useState("vite");
-  const [dryRun, setDryRun] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [migrating, setMigrating] = useState(false);
+  const [scanning, setScanning]           = useState(false);
+  const [migrating, setMigrating]         = useState(false);
+  const [migMode, setMigMode]             = useState("migrate"); // "migrate" | "preview"
 
   const addLog = useCallback((type, msg) => {
-    setLogs((prev) => [...prev, { type, msg, ts: Date.now() }]);
+    setLogs(prev => [...prev, { type, msg, ts: Date.now() }]);
   }, []);
 
-  // Health check on mount
+  // Scroll panel to bottom whenever output changes
+  const panelRef = useRef();
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    // Small rAF delay so DOM has painted the new content first
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  }, [logs, scanReport, migResult, progress]);
+
   useEffect(() => {
     fetch(`${API}/api/health`)
-      .then((r) => r.json())
-      .then((d) => setServerOk(d.ok === true))
+      .then(r => r.json())
+      .then(d => setServerOk(d.ok === true))
       .catch(() => setServerOk(false));
   }, []);
 
   const handleFile = (file) => {
     setLoadedFile(file);
     setScanReport(null);
-    setMigrationResult(null);
+    setMigResult(null);
     setLogs([]);
     addLog("info", `Loaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
   };
 
   const runScan = async () => {
     if (!loadedFile || scanning) return;
-    setScanning(true);
-    setScanReport(null);
-    setMigrationResult(null);
-    setProgress({ msg: "Reading zip…", pct: 5 });
-
+    setScanning(true); setScanReport(null); setMigResult(null);
+    setProgress({ msg: "Reading zip…", pct: 10 });
     try {
       const b64 = await fileToBase64(loadedFile);
-      setProgress({ msg: "Scanning for lock-in signals…", pct: 30 });
-
+      setProgress({ msg: "Scanning for lock-in signals…", pct: 35 });
       const res = await fetch(`${API}/api/scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source: { zip: b64, name: loadedFile.name } }),
       });
-
       setProgress({ msg: "Building report…", pct: 80 });
       const report = await res.json();
-
       if (report.error) throw new Error(report.error);
-
-      setProgress({ msg: "Complete", pct: 100 });
-      await sleep(250);
+      setProgress({ msg: "Done", pct: 100 });
+      await sleep(200);
       setScanReport(report);
-      addLog("ok", `Scan complete — ${report.signals?.length ?? 0} signals found`);
+      addLog("ok", `Scan complete — ${report.signals?.length ?? 0} signals, complexity: ${report.summary?.migrationComplexity}`);
     } catch (err) {
       addLog("error", "Scan failed: " + err.message);
     } finally {
-      setProgress(null);
-      setScanning(false);
+      setProgress(null); setScanning(false);
     }
   };
 
   const runMigrate = async () => {
     if (!loadedFile || migrating) return;
-    setMigrating(true);
-    setMigrationResult(null);
-    setProgress({ msg: "Reading zip…", pct: 5 });
-
+    const dryRun = migMode === "preview";
+    setMigrating(true); setMigResult(null);
+    setProgress({ msg: "Reading zip…", pct: 10 });
     try {
       const b64 = await fileToBase64(loadedFile);
-      setProgress({ msg: "Applying transforms…", pct: 40 });
-
+      setProgress({ msg: dryRun ? "Computing transforms…" : "Applying transforms…", pct: 45 });
       const res = await fetch(`${API}/api/migrate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source: { zip: b64, name: loadedFile.name },
-          dryRun,
-          targetAdapter: selectedTarget,
-        }),
+        body: JSON.stringify({ source: { zip: b64, name: loadedFile.name }, dryRun, targetAdapter: selectedTarget }),
       });
-
       setProgress({ msg: "Finalizing…", pct: 85 });
       const result = await res.json();
-
       if (result.error) throw new Error(result.error);
-
       setProgress({ msg: "Done", pct: 100 });
-      await sleep(250);
-      setMigrationResult(result);
-      addLog(
-        "ok",
-        dryRun
-          ? `Dry run complete — ${result.transformLog?.length ?? 0} transforms previewed`
-          : `Migration complete — ${result.files?.length ?? 0} files changed`
-      );
+      await sleep(200);
+      setMigResult(result);
+      addLog("ok", dryRun
+        ? `Preview complete — ${result.transformLog?.length ?? 0} transforms would apply`
+        : `Migration complete — ${result.files?.length ?? 0} files changed`);
     } catch (err) {
       addLog("error", "Migration failed: " + err.message);
     } finally {
-      setProgress(null);
-      setMigrating(false);
+      setProgress(null); setMigrating(false);
     }
   };
 
   const handleDownload = async () => {
-    if (!migrationResult?.files?.length) return;
+    if (!migResult?.files?.length) return;
     try {
-      await downloadMigrationZip(migrationResult, loadedFile.name);
+      await downloadMigrationZip(migResult, loadedFile.name);
       addLog("ok", "Download started");
     } catch (err) {
       addLog("error", "Download failed: " + err.message);
@@ -387,472 +396,192 @@ export default function MigrateApp() {
   const hasProject = !!loadedFile;
 
   return (
-    <div style={s.app}>
+    <div className="app-shell">
       <Topbar serverOk={serverOk} />
 
-      <div style={s.body}>
-        {/* Left sidebar — ingestion + target */}
-        <aside style={s.sidebar}>
-          <div style={s.sectionLabel}>source</div>
+      <div className="app-body">
 
+        {/* ── sidebar ── */}
+        <aside className="sidebar">
+
+          {/* source */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>source</span>
+            <Tip
+              text="Export your project as a ZIP from Lovable (or zip a GitHub clone). Drop it here."
+              
+            />
+          </div>
           <DropZone onFile={handleFile} loadedFile={loadedFile} />
 
-          <div style={{ ...s.sectionLabel, marginTop: "1.5rem" }}>target format</div>
+          {/* target */}
+          <div className="flex items-center gap-2 mt-4 mb-2">
+            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>output format</span>
+            <Tip
+              text="Vite + React is framework-agnostic. Next.js uses App Router conventions."
+              
+            />
+          </div>
           {[
-            { id: "vite", label: "Vite + React", desc: "Framework-agnostic (recommended)" },
-            { id: "nextjs", label: "Next.js", desc: "App Router structure" },
-          ].map((t) => (
+            { id: "vite",   label: "Vite + React",  desc: "Recommended" },
+            { id: "nextjs", label: "Next.js",        desc: "App Router" },
+          ].map(t => (
             <div
               key={t.id}
-              style={{
-                ...s.targetOption,
-                borderColor: selectedTarget === t.id ? "var(--green-dim)" : "var(--border)",
-                background: selectedTarget === t.id ? "var(--green-glow)" : "transparent",
-              }}
+              className={`target-option ${selectedTarget === t.id ? "active" : ""}`}
               onClick={() => setSelectedTarget(t.id)}
+              role="radio" aria-checked={selectedTarget === t.id}
+              tabIndex={0} onKeyDown={e => e.key === "Enter" && setSelectedTarget(t.id)}
             >
-              <span style={{ color: selectedTarget === t.id ? "var(--green)" : "var(--text-dim)" }}>
+              <span className={selectedTarget === t.id ? "t-green" : "t-muted"}>
                 {selectedTarget === t.id ? "◉" : "○"}
               </span>
               <div>
-                <div style={{ color: "var(--text)", fontSize: "12px" }}>{t.label}</div>
-                <div style={{ color: "var(--text-muted)", fontSize: "10px" }}>{t.desc}</div>
+                <div className="t-white" style={{ fontSize: 12 }}>{t.label}</div>
+                <div className="t-muted t-xs">{t.desc}</div>
               </div>
             </div>
           ))}
 
-          <label style={s.dryRunLabel}>
-            <input
-              type="checkbox"
-              checked={dryRun}
-              onChange={(e) => setDryRun(e.target.checked)}
-              style={{ accentColor: "var(--green)" }}
-            />
-            <span style={{ color: "var(--text-dim)", fontSize: "11px" }}>dry run (preview only)</span>
-          </label>
+          {/* actions */}
+          <div className="flex flex-col gap-2 mt-4">
+            {/* scan */}
+            <div className="flex items-center gap-2">
+              <button
+                className="btn btn-ghost btn-block"
+                disabled={!hasProject || busy}
+                onClick={runScan}
+              >
+                {scanning ? <Spinner label="scanning…" /> : "◉ scan"}
+              </button>
+              <Tip
+                text="Read-only. Detects lock-in signals without changing anything. Run this first to understand what's there."
+                
+              />
+            </div>
 
-          <div style={s.actionButtons}>
-            <button
-              style={{ ...s.btn, opacity: hasProject && !busy ? 1 : 0.4 }}
-              disabled={!hasProject || busy}
-              onClick={runScan}
-            >
-              {scanning ? "◌ scanning…" : "◉ scan project"}
-            </button>
-            <button
-              style={{ ...s.btnPrimary, opacity: hasProject && !busy ? 1 : 0.4 }}
-              disabled={!hasProject || busy}
-              onClick={runMigrate}
-            >
-              {migrating
-                ? "◌ migrating…"
-                : dryRun
-                ? "◈ preview migration"
-                : "▸ migrate project"}
-            </button>
+            {/* migrate mode toggle + button */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-1" style={{ flex: 1 }}>
+                {/* toggle row */}
+                <div className="flex gap-1">
+                  {[
+                    { id: "migrate", label: "migrate" },
+                    { id: "preview", label: "preview" },
+                  ].map(m => (
+                    <button
+                      key={m.id}
+                      className={`btn btn-xs ${migMode === m.id ? "btn-ghost" : "btn-outline"}`}
+                      style={{
+                        flex: 1,
+                        justifyContent: "center",
+                        borderColor: migMode === m.id ? "var(--green-dim)" : undefined,
+                        color: migMode === m.id ? "var(--green)" : undefined,
+                      }}
+                      onClick={() => setMigMode(m.id)}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className="btn btn-primary btn-block btn-center"
+                  disabled={!hasProject || busy}
+                  onClick={runMigrate}
+                >
+                  {migrating
+                    ? <Spinner label={migMode === "preview" ? "computing…" : "migrating…"} />
+                    : migMode === "preview"
+                    ? "◈ preview transforms"
+                    : "▸ migrate project"}
+                </button>
+              </div>
+              <Tip
+                text={
+                  migMode === "preview"
+                    ? "Preview runs all transforms internally and shows what would change — but produces no downloadable output."
+                    : "Applies all transforms and produces a downloadable ZIP of only the changed files."
+                }
+                
+              />
+            </div>
           </div>
         </aside>
 
-        {/* Center — results */}
-        <main style={s.main}>
+        {/* ── main panel ── */}
+        <main className="panel-main" ref={panelRef}>
           {progress && (
-            <div style={s.progressBar}>
-              <div style={s.progressTrack}>
-                <div style={{ ...s.progressFill, width: `${progress.pct}%` }} />
+            <div className="progress fade-up">
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${progress.pct}%` }} />
               </div>
-              <span style={s.progressMsg}>{progress.msg}</span>
+              <span className="progress-label">{progress.msg}</span>
             </div>
           )}
 
-          {!scanReport && !migrationResult && logs.length === 0 && !progress && (
-            <div style={s.emptyState}>
-              <div style={s.emptyIcon}>⬇</div>
-              <div style={s.emptyTitle}>Drop a ZIP to get started</div>
-              <div style={s.emptyDesc}>
-                Export your Lovable project from GitHub, drop the ZIP in the left panel,
-                then scan for lock-in or migrate directly.
-              </div>
+          {!scanReport && !migResult && logs.length === 0 && !progress && (
+            <div className="empty-state">
+              <span className="empty-icon">◎</span>
+              <span className="empty-title">Ready when you are</span>
+              <span className="empty-desc">
+                Upload a ZIP, scan it to see what lock-in exists, then migrate when you're ready.
+              </span>
             </div>
           )}
 
-          {logs.map((log) => (
-            <div key={log.ts} style={s.logLine}>
-              <span
-                style={{
-                  color:
-                    log.type === "ok"
-                      ? "var(--green)"
-                      : log.type === "error"
-                      ? "var(--red)"
-                      : "var(--text-dim)",
-                }}
-              >
+          {logs.map(log => (
+            <div key={log.ts} className="log-line">
+              <span className={`log-glyph ${log.type === "ok" ? "t-green" : log.type === "error" ? "t-red" : "t-dim"}`}>
                 {log.type === "ok" ? "✓" : log.type === "error" ? "✗" : "·"}
               </span>
-              <span style={s.logText}>{log.msg}</span>
+              <span className="log-text">{log.msg}</span>
             </div>
           ))}
 
           <ScanReport report={scanReport} />
-          <MigrationResult result={migrationResult} onDownload={handleDownload} />
+          <MigrationResult result={migResult} onDownload={handleDownload} />
         </main>
 
-        {/* Right sidebar — help */}
-        <aside style={s.rightSidebar}>
-          <div style={s.sectionLabel}>what to expect</div>
-          <div style={s.helpBlock}>
-            <p style={s.helpText}>
-              <strong style={{ color: "var(--text)" }}>Scan</strong> detects lock-in signals
-              without changing anything. Safe to run first.
+        {/* ── right sidebar ── */}
+        <aside className="sidebar-right">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>guide</span>
+          </div>
+
+          <div className="help-block">
+            <p className="help-text">
+              <strong>Scan</strong> is always read-only. No files change. Use it to understand
+              what lock-in exists before deciding whether to migrate.
             </p>
-            <p style={{ ...s.helpText, marginTop: "0.75rem" }}>
-              <strong style={{ color: "var(--text)" }}>Migrate</strong> applies transforms
-              and produces a downloadable ZIP with only the changed files.
+            <p className="help-text">
+              <strong>Preview</strong> runs transforms internally and shows the change log —
+              no output is produced. Use it to verify the plan before committing.
             </p>
-            <p style={{ ...s.helpText, marginTop: "0.75rem" }}>
-              Enable <strong style={{ color: "var(--text)" }}>dry run</strong> to preview
-              what would change without downloading anything.
+            <p className="help-text">
+              <strong>Migrate</strong> applies everything and produces a ZIP of only the
+              modified files. Review the diff before merging into your repo.
             </p>
           </div>
 
-          <div style={{ ...s.sectionLabel, marginTop: "1.5rem" }}>lovable transforms</div>
-          <div style={s.transformList}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>transforms</span>
+          </div>
+
+          <div className="flex flex-col gap-2">
             {[
-              ["remove-lovable-tagger", "Removes build dep + vite.config call"],
+              ["remove-lovable-tagger",    "Strips build dep + vite.config call"],
               ["abstract-supabase-client", "Moves credentials to env vars"],
-              ["remove-env-bleed", "Renames GPT_ENGINEER_* to VITE_*"],
+              ["remove-env-bleed",         "Renames GPT_ENGINEER_* → VITE_*"],
             ].map(([id, desc]) => (
-              <div key={id} style={s.transformItem}>
-                <div style={{ color: "var(--green)", fontSize: "11px" }}>◈ {id}</div>
-                <div style={{ color: "var(--text-muted)", fontSize: "10px", marginTop: "2px" }}>{desc}</div>
+              <div key={id} className="transform-item">
+                <div className="t-green t-xs">◈ {id}</div>
+                <div className="t-muted t-xs mt-1">{desc}</div>
               </div>
             ))}
           </div>
         </aside>
+
       </div>
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const s = {
-  app: {
-    display: "grid",
-    gridTemplateRows: "44px 1fr",
-    height: "100vh",
-    overflow: "hidden",
-    fontFamily: "var(--mono)",
-  },
-
-  // Topbar
-  topbar: {
-    gridColumn: "1 / -1",
-    display: "flex",
-    alignItems: "center",
-    gap: "1.5rem",
-    padding: "0 1.25rem",
-    borderBottom: "1px solid var(--border)",
-    background: "var(--bg-1)",
-  },
-  logo: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-    fontSize: "14px",
-    fontWeight: 500,
-    color: "var(--green)",
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-  },
-  logoDot: {
-    width: "7px",
-    height: "7px",
-    borderRadius: "50%",
-    background: "var(--green)",
-    boxShadow: "0 0 8px var(--green)",
-  },
-  tagline: {
-    color: "var(--text-muted)",
-    fontSize: "11px",
-    letterSpacing: "0.04em",
-    fontFamily: "var(--sans)",
-  },
-  topbarRight: {
-    marginLeft: "auto",
-    display: "flex",
-    alignItems: "center",
-    gap: "1rem",
-  },
-  badge: {
-    fontSize: "10px",
-    padding: "2px 8px",
-    border: "1px solid var(--border)",
-    borderRadius: "var(--radius)",
-    letterSpacing: "0.05em",
-    fontFamily: "var(--mono)",
-  },
-  ghLink: {
-    color: "var(--text-dim)",
-    fontSize: "11px",
-    textDecoration: "none",
-    letterSpacing: "0.04em",
-  },
-
-  // Body layout
-  body: {
-    display: "grid",
-    gridTemplateColumns: "260px 1fr 240px",
-    overflow: "hidden",
-  },
-
-  // Sidebar
-  sidebar: {
-    borderRight: "1px solid var(--border)",
-    background: "var(--bg-1)",
-    padding: "1rem",
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
-  },
-
-  sectionLabel: {
-    fontSize: "10px",
-    letterSpacing: "0.12em",
-    color: "var(--text-muted)",
-    textTransform: "uppercase",
-    padding: "0.25rem 0",
-    marginBottom: "0.25rem",
-  },
-
-  // Drop zone
-  dropzone: {
-    border: "1px dashed",
-    borderRadius: "var(--radius)",
-    padding: "1.5rem 1rem",
-    textAlign: "center",
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-    alignItems: "center",
-    transition: "border-color 0.15s, background 0.15s",
-  },
-
-  // Target options
-  targetOption: {
-    display: "flex",
-    gap: "0.6rem",
-    alignItems: "flex-start",
-    padding: "0.6rem 0.75rem",
-    border: "1px solid",
-    borderRadius: "var(--radius)",
-    cursor: "pointer",
-    transition: "border-color 0.15s, background 0.15s",
-  },
-
-  dryRunLabel: {
-    display: "flex",
-    gap: "0.5rem",
-    alignItems: "center",
-    cursor: "pointer",
-    padding: "0.25rem 0",
-  },
-
-  actionButtons: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
-    marginTop: "0.5rem",
-  },
-  btn: {
-    background: "var(--bg-2)",
-    border: "1px solid var(--border-hi)",
-    color: "var(--text)",
-    padding: "8px 12px",
-    borderRadius: "var(--radius)",
-    cursor: "pointer",
-    fontSize: "12px",
-    fontFamily: "var(--mono)",
-    letterSpacing: "0.04em",
-    transition: "opacity 0.15s",
-    textAlign: "left",
-  },
-  btnPrimary: {
-    background: "var(--green)",
-    border: "none",
-    color: "#000",
-    padding: "9px 12px",
-    borderRadius: "var(--radius)",
-    cursor: "pointer",
-    fontSize: "12px",
-    fontFamily: "var(--mono)",
-    fontWeight: 500,
-    letterSpacing: "0.04em",
-    transition: "opacity 0.15s",
-    textAlign: "left",
-  },
-
-  // Main content area
-  main: {
-    padding: "1.25rem",
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.75rem",
-  },
-
-  // Progress bar
-  progressBar: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-  },
-  progressTrack: {
-    height: "2px",
-    background: "var(--border)",
-    borderRadius: "1px",
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    background: "var(--green)",
-    transition: "width 0.3s ease",
-  },
-  progressMsg: {
-    fontSize: "11px",
-    color: "var(--text-dim)",
-    letterSpacing: "0.05em",
-  },
-
-  // Empty state
-  emptyState: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.75rem",
-    padding: "4rem 2rem",
-    textAlign: "center",
-    color: "var(--text-muted)",
-  },
-  emptyIcon: { fontSize: "28px" },
-  emptyTitle: { fontSize: "14px", color: "var(--text-dim)", fontFamily: "var(--sans)" },
-  emptyDesc: {
-    fontSize: "12px",
-    color: "var(--text-muted)",
-    fontFamily: "var(--sans)",
-    maxWidth: "340px",
-    lineHeight: 1.6,
-  },
-
-  // Log lines
-  logLine: {
-    display: "flex",
-    gap: "0.6rem",
-    fontSize: "12px",
-    alignItems: "flex-start",
-  },
-  logText: { color: "var(--text-dim)", lineHeight: 1.5 },
-
-  // Report blocks
-  reportBlock: {
-    border: "1px solid var(--border)",
-    borderRadius: "var(--radius)",
-    background: "var(--bg-1)",
-    overflow: "hidden",
-  },
-  reportHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    padding: "0.75rem 1rem",
-    borderBottom: "1px solid var(--border)",
-    background: "var(--bg-2)",
-    flexWrap: "wrap",
-  },
-  platformBadge: {
-    fontSize: "11px",
-    padding: "2px 8px",
-    border: "1px solid var(--border-hi)",
-    color: "var(--green)",
-    borderRadius: "var(--radius)",
-    letterSpacing: "0.08em",
-  },
-  complexityBadge: { fontSize: "11px", letterSpacing: "0.05em" },
-  statRow: { marginLeft: "auto", display: "flex", gap: "0.75rem", fontSize: "12px" },
-
-  detectionSignals: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.4rem",
-    flexWrap: "wrap",
-    padding: "0.5rem 1rem",
-    borderBottom: "1px solid var(--border)",
-    background: "var(--bg-1)",
-  },
-  dimLabel: { fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" },
-  sigTag: {
-    fontSize: "10px",
-    padding: "2px 6px",
-    border: "1px solid var(--border)",
-    color: "var(--text-dim)",
-    borderRadius: "var(--radius)",
-  },
-
-  signalList: { padding: "0.75rem 1rem", display: "flex", flexDirection: "column", gap: "10px" },
-  signalItem: { display: "flex", gap: "0.6rem", fontSize: "12px", alignItems: "flex-start" },
-  signalBody: { display: "flex", flexDirection: "column", gap: "2px" },
-  signalFile: { color: "var(--cyan)", fontSize: "11px" },
-  signalDesc: { color: "var(--text-dim)", lineHeight: 1.5 },
-  signalSug: { color: "var(--text-muted)", fontSize: "11px" },
-
-  dryRunBadge: {
-    fontSize: "10px",
-    padding: "2px 6px",
-    border: "1px solid var(--yellow)",
-    color: "var(--yellow)",
-    borderRadius: "var(--radius)",
-    letterSpacing: "0.06em",
-  },
-
-  downloadBtn: {
-    margin: "0 1rem 1rem",
-    background: "var(--green)",
-    color: "#000",
-    border: "none",
-    padding: "9px 16px",
-    borderRadius: "var(--radius)",
-    cursor: "pointer",
-    fontSize: "12px",
-    fontFamily: "var(--mono)",
-    fontWeight: 500,
-    letterSpacing: "0.04em",
-  },
-
-  // Right sidebar
-  rightSidebar: {
-    borderLeft: "1px solid var(--border)",
-    background: "var(--bg-1)",
-    padding: "1rem",
-    overflowY: "auto",
-  },
-  helpBlock: { marginBottom: "0.5rem" },
-  helpText: {
-    fontFamily: "var(--sans)",
-    fontSize: "12px",
-    color: "var(--text-dim)",
-    lineHeight: 1.6,
-  },
-  transformList: { display: "flex", flexDirection: "column", gap: "0.75rem" },
-  transformItem: {
-    padding: "0.5rem 0.75rem",
-    border: "1px solid var(--border)",
-    borderRadius: "var(--radius)",
-    background: "var(--bg-2)",
-  },
-};

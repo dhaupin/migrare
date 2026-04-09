@@ -1,0 +1,86 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: install web deps
+        working-directory: web
+        run: npm install
+
+      - name: build web
+        working-directory: web
+        run: npm run build
+
+      - name: package web dist
+        run: |
+          cd web
+          zip -r ../migrare-web-${{ github.ref_name }}.zip dist/
+          echo "dist zip: $(du -sh ../migrare-web-${{ github.ref_name }}.zip | cut -f1)"
+
+      - name: package source
+        run: |
+          zip -r migrare-src-${{ github.ref_name }}.zip \
+            src/ \
+            web/src/ \
+            web/scripts/ \
+            web/public/ \
+            web/functions/ \
+            web/ssr.config.js \
+            web/vite.config.js \
+            web/package.json \
+            web/index.html \
+            package.json \
+            tsconfig.json \
+            LICENSE \
+            README.md \
+            CHANGELOG.md \
+            AGENTS.md \
+            .gitignore \
+            --exclude "*/node_modules/*" \
+            --exclude "*/dist/*" \
+            --exclude "*/.git/*"
+          echo "src zip: $(du -sh migrare-src-${{ github.ref_name }}.zip | cut -f1)"
+
+      - name: extract changelog entry
+        id: changelog
+        run: |
+          # Pull the section for this tag from CHANGELOG.md
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          BODY=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+          if [ -z "$BODY" ]; then
+            BODY="See [CHANGELOG.md](https://github.com/dhaupin/migrare/blob/main/CHANGELOG.md) for details."
+          fi
+          # Write to file to avoid quoting issues
+          echo "$BODY" > release_notes.md
+          echo "extracted=$(echo $BODY | wc -w) words" 
+
+      - name: create github release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "migrare ${{ github.ref_name }}"
+          body_path: release_notes.md
+          files: |
+            migrare-web-${{ github.ref_name }}.zip
+            migrare-src-${{ github.ref_name }}.zip
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
