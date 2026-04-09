@@ -5,12 +5,12 @@
 # To enable rate limiting:
 #
 #   1. Create a KV namespace in the Cloudflare dashboard
-#      Storage and Databases → Workers KV → Create instance → name it "migrare"
+#      Workers & Pages → KV → Create namespace → name it "migrare-rl"
 #
 #   2. In your CF Pages project settings:
 #      Settings → Functions → KV namespace bindings
 #      Variable name: MIGRARE_RL
-#      KV namespace:  migrare
+#      KV namespace:  migrare-rl
 #
 # The binding is optional — the API works without it, just unthrottled.
 
