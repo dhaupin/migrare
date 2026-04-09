@@ -1,0 +1,23 @@
+# wrangler.toml — Cloudflare Pages Functions config
+#
+# Rate limiting uses a KV namespace bound as MIGRARE_RL.
+# Without this binding, the rate limiter fails open (requests are allowed).
+# To enable rate limiting:
+#
+#   1. Create a KV namespace in the Cloudflare dashboard
+#      Storage and Databases → Workers KV → Create instance → name it "migrare"
+#
+#   2. In your CF Pages project settings:
+#      Settings → Functions → KV namespace bindings
+#      Variable name: MIGRARE_RL
+#      KV namespace:  migrare
+#
+# The binding is optional — the API works without it, just unthrottled.
+
+name = "migrare"
+compatibility_date = "2024-09-23"
+
+# Uncomment and fill in to use KV rate limiting locally via wrangler dev:
+# [[kv_namespaces]]
+# binding = "MIGRARE_RL"
+# id = "your-kv-namespace-id-here"

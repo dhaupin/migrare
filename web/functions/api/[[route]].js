@@ -6,23 +6,143 @@
 //
 // Routes handled:
 //   GET  /api/health
+//   GET  /api/spec
 //   POST /api/scan     { source: { zip: base64, name: string } } → ScanReport
 //   POST /api/migrate  { source: { zip: base64, name: string }, dryRun? } → MigrationResult
+//
+// PROTECTION LAYERS (applied in order before any engine work):
+//   1. CORS origin lockdown — only migrare.creadev.org in production
+//   2. Request body size cap — 8 MB max (base64 of ~5.9 MB zip)
+//   3. Input shape validation — zip field must look like base64, name is sanitized
+//   4. Decompressed size cap — 12 MB total across all files (zip bomb defense)
+//   5. Rate limiting — IP-based via CF KV if bound, fails open if not configured
 
 // =============================================================================
-// ZIP PARSER
-// Uses DecompressionStream (available in the Workers runtime).
-// Skips binary files and entries over 512 KB.
+// PROTECTION CONSTANTS
+// =============================================================================
+
+const MAX_BODY_BYTES     = 8 * 1024 * 1024;   // 8 MB — max raw request body
+const MAX_UNZIPPED_BYTES = 12 * 1024 * 1024;  // 12 MB — max total decompressed content
+const MAX_FILE_BYTES     = 512 * 1024;         // 512 KB — max single file (already in parser)
+const MAX_ZIP_NAME_LEN   = 128;                // max filename length
+const BASE64_RE          = /^[A-Za-z0-9+/]+=*$/; // loose base64 check
+
+// Rate limit: sliding window per IP
+const RL_WINDOW_MS  = 60_000;  // 1 minute window
+const RL_MAX_SCAN   = 15;      // scan requests per window per IP
+const RL_MAX_MIGRATE = 8;      // migrate requests per window per IP
+
+// Allowed origins — tightened in production
+const ALLOWED_ORIGINS = [
+  "https://migrare.creadev.org",
+  "http://localhost:5173",
+  "http://localhost:4242",
+];
+
+// =============================================================================
+// CORS HELPERS
+// =============================================================================
+
+function getCorsHeaders(requestOrigin) {
+  const origin = ALLOWED_ORIGINS.includes(requestOrigin)
+    ? requestOrigin
+    : ALLOWED_ORIGINS[0]; // default to prod origin for non-matching
+
+  return {
+    "Access-Control-Allow-Origin":  origin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin",
+  };
+}
+
+function err(message, status, corsHeaders) {
+  return Response.json({ error: message }, { status, headers: corsHeaders });
+}
+
+// =============================================================================
+// RATE LIMITING (CF KV, fails open if KV not bound)
+// =============================================================================
+
+async function checkRateLimit(kvNamespace, ip, endpoint) {
+  if (!kvNamespace || !ip) return { allowed: true };
+
+  const key    = `rl:${endpoint}:${ip}`;
+  const limit  = endpoint === "migrate" ? RL_MAX_MIGRATE : RL_MAX_SCAN;
+  const now    = Date.now();
+
+  try {
+    const raw = await kvNamespace.get(key);
+    const record = raw ? JSON.parse(raw) : { count: 0, windowStart: now };
+
+    // Reset window if expired
+    if (now - record.windowStart > RL_WINDOW_MS) {
+      record.count = 0;
+      record.windowStart = now;
+    }
+
+    record.count++;
+
+    // Write back — TTL slightly longer than window so KV auto-cleans
+    await kvNamespace.put(key, JSON.stringify(record), { expirationTtl: 120 });
+
+    if (record.count > limit) {
+      const retryAfter = Math.ceil((RL_WINDOW_MS - (now - record.windowStart)) / 1000);
+      return { allowed: false, retryAfter };
+    }
+
+    return { allowed: true };
+  } catch {
+    // KV error — fail open, don't block legit traffic
+    return { allowed: true };
+  }
+}
+
+// =============================================================================
+// INPUT VALIDATION
+// =============================================================================
+
+function validateZipPayload(source) {
+  if (!source || typeof source !== "object") {
+    return "source must be an object";
+  }
+  if (typeof source.zip !== "string" || source.zip.length === 0) {
+    return "source.zip must be a non-empty string";
+  }
+  // Rough base64 check — strip whitespace then test charset
+  const stripped = source.zip.replace(/\s/g, "");
+  if (!BASE64_RE.test(stripped)) {
+    return "source.zip must be valid base64";
+  }
+  // Size check on base64 string itself (~4/3 of raw bytes)
+  const approxBytes = Math.floor(stripped.length * 0.75);
+  if (approxBytes > MAX_BODY_BYTES) {
+    return `zip too large — maximum is ${Math.round(MAX_BODY_BYTES / 1024 / 1024)} MB`;
+  }
+  if (source.name !== undefined) {
+    if (typeof source.name !== "string") return "source.name must be a string";
+    if (source.name.length > MAX_ZIP_NAME_LEN) return "source.name too long";
+    // Sanitize path traversal attempts
+    if (/[<>:"|?*\x00-\x1f]/.test(source.name) || source.name.includes("..")) {
+      return "source.name contains invalid characters";
+    }
+  }
+  return null; // valid
+}
+
+// =============================================================================
+// ZIP PARSER (with decompressed size cap for zip bomb defense)
 // =============================================================================
 
 async function parseZip(base64Data) {
-  const binStr = atob(base64Data);
+  const binStr = atob(base64Data.replace(/\s/g, ""));
   const bytes = new Uint8Array(binStr.length);
   for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
 
   const files = new Map();
   const view = new DataView(bytes.buffer);
   let offset = 0;
+  let totalUnzippedBytes = 0;
 
   while (offset < bytes.length - 4) {
     const sig = view.getUint32(offset, true);
@@ -40,7 +160,15 @@ async function parseZip(base64Data) {
 
     const isBinary = /\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot|mp4|mp3|pdf|zip)$/i.test(fname);
     const isDir    = fname.endsWith("/") || normalizedPath === "";
-    const tooBig   = uncompSize > 512 * 1024;
+    const tooBig   = uncompSize > MAX_FILE_BYTES;
+
+    // Zip bomb check — track cumulative decompressed size
+    if (!isDir && !isBinary) {
+      totalUnzippedBytes += uncompSize;
+      if (totalUnzippedBytes > MAX_UNZIPPED_BYTES) {
+        throw new Error(`zip exceeds maximum decompressed size of ${Math.round(MAX_UNZIPPED_BYTES / 1024 / 1024)} MB`);
+      }
+    }
 
     if (!isDir && !isBinary && !tooBig && normalizedPath) {
       const compData = bytes.slice(headerEnd, headerEnd + compSize);
@@ -319,11 +447,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // ROUTE HANDLERS
 // =============================================================================
 
-async function handleHealth() {
-  return Response.json({ ok: true, version: "0.0.1" });
-}
-
-async function handleSpec() {
+async function handleSpec(corsHeaders) {
   return Response.json({
     version: "0.0.1",
     baseUrl: "https://migrare.creadev.org",
@@ -414,27 +538,42 @@ async function handleSpec() {
       forAgents: "https://migrare.creadev.org/for-ai",
       source:   "https://github.com/dhaupin/migrare",
     },
-  });
+  }, { headers: corsHeaders });
 }
 
-async function handleScan(request) {
-  const body = await request.json();
-  const { source } = body;
-  if (!source?.zip) {
-    return Response.json({ error: "Missing source.zip" }, { status: 400 });
+async function handleScan(request, corsHeaders, env, ip) {
+  // Rate limit
+  const rl = await checkRateLimit(env?.MIGRARE_RL, ip, "scan");
+  if (!rl.allowed) {
+    return Response.json(
+      { error: `Rate limit exceeded. Try again in ${rl.retryAfter}s.` },
+      { status: 429, headers: { ...corsHeaders, "Retry-After": String(rl.retryAfter) } }
+    );
   }
 
-  const fileMap = await parseZip(source.zip);
+  const body = await request.json();
+  const { source } = body;
+
+  const validationError = validateZipPayload(source);
+  if (validationError) {
+    return err(validationError, 400, corsHeaders);
+  }
+
+  let fileMap;
+  try {
+    fileMap = await parseZip(source.zip);
+  } catch (e) {
+    return err(e.message, 413, corsHeaders);
+  }
+
   const graph = buildGraph(fileMap, source.name ?? "project.zip");
   const detection = detectPlatform(graph);
 
   if (detection.platform === "unknown") {
     return Response.json({
       platform: "unknown", confidence: "low", signals: [],
-      detectionSignals: [],
-      summary: buildSummary([]),
-      fileCount: fileMap.size,
-    });
+      detectionSignals: [], summary: buildSummary([]), fileCount: fileMap.size,
+    }, { headers: corsHeaders });
   }
 
   const signals = scanLovable(graph);
@@ -445,18 +584,35 @@ async function handleScan(request) {
     detectionSignals: detection.signals,
     summary: buildSummary(signals),
     fileCount: fileMap.size,
-  });
+  }, { headers: corsHeaders });
 }
 
-async function handleMigrate(request) {
+async function handleMigrate(request, corsHeaders, env, ip) {
+  // Rate limit — stricter than scan
+  const rl = await checkRateLimit(env?.MIGRARE_RL, ip, "migrate");
+  if (!rl.allowed) {
+    return Response.json(
+      { error: `Rate limit exceeded. Try again in ${rl.retryAfter}s.` },
+      { status: 429, headers: { ...corsHeaders, "Retry-After": String(rl.retryAfter) } }
+    );
+  }
+
   const body = await request.json();
   const { source, dryRun = false } = body;
-  if (!source?.zip) {
-    return Response.json({ error: "Missing source.zip" }, { status: 400 });
+
+  const validationError = validateZipPayload(source);
+  if (validationError) {
+    return err(validationError, 400, corsHeaders);
+  }
+
+  let fileMap;
+  try {
+    fileMap = await parseZip(source.zip);
+  } catch (e) {
+    return err(e.message, 413, corsHeaders);
   }
 
   const startTime = Date.now();
-  const fileMap = await parseZip(source.zip);
   const graph = buildGraph(fileMap, source.name ?? "project.zip");
   const detection = detectPlatform(graph);
   const signals = detection.platform !== "unknown" ? scanLovable(graph) : [];
@@ -487,52 +643,54 @@ async function handleMigrate(request) {
     transformLog,
     files,
     errors: [],
-  });
+  }, { headers: corsHeaders });
 }
 
 // =============================================================================
 // ENTRY POINT
 // =============================================================================
 
-export async function onRequest({ request }) {
-  const url = new URL(request.url);
-  const path = url.pathname;
+export async function onRequest({ request, env }) {
+  const url    = new URL(request.url);
+  const path   = url.pathname;
   const method = request.method;
 
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
+  const origin      = request.headers.get("Origin") ?? "";
+  const corsHeaders = getCorsHeaders(origin);
 
   if (method === "OPTIONS") {
-    return new Response(null, { status: 204, headers });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  // Extract IP for rate limiting (CF provides CF-Connecting-IP)
+  const ip = request.headers.get("CF-Connecting-IP")
+          ?? request.headers.get("X-Forwarded-For")?.split(",")[0].trim()
+          ?? "unknown";
+
   try {
+    // Body size guard — check Content-Length before reading body
+    const contentLength = request.headers.get("Content-Length");
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+      return err(`Request too large — maximum ${Math.round(MAX_BODY_BYTES / 1024 / 1024)} MB`, 413, corsHeaders);
+    }
+
     let response;
 
     if (path === "/api/health" && method === "GET") {
-      response = await handleHealth();
+      response = Response.json({ ok: true, version: "0.0.1" }, { headers: corsHeaders });
     } else if (path === "/api/spec" && method === "GET") {
-      response = await handleSpec();
+      response = await handleSpec(corsHeaders);
     } else if (path === "/api/scan" && method === "POST") {
-      response = await handleScan(request);
+      response = await handleScan(request, corsHeaders, env, ip);
     } else if (path === "/api/migrate" && method === "POST") {
-      response = await handleMigrate(request);
+      response = await handleMigrate(request, corsHeaders, env, ip);
     } else {
-      response = Response.json({ error: `Not found: ${path}` }, { status: 404 });
+      response = err(`Not found: ${path}`, 404, corsHeaders);
     }
 
-    // Merge CORS headers onto the response
-    const newHeaders = new Headers(response.headers);
-    for (const [k, v] of Object.entries(headers)) newHeaders.set(k, v);
-    return new Response(response.body, { status: response.status, headers: newHeaders });
+    return response;
 
-  } catch (err) {
-    return Response.json(
-      { error: err?.message ?? "Internal server error" },
-      { status: 500, headers }
-    );
+  } catch (e) {
+    return err(e?.message ?? "Internal server error", 500, corsHeaders);
   }
 }
