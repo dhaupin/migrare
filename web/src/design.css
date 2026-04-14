@@ -449,8 +449,7 @@ pre .num { color: var(--yellow); }
   border-radius: var(--r);
 }
 .nav-icon:hover { color: var(--accent); text-decoration: none; }
-.nav-icon svg { width: 18px; height: 18px; }
-.nav-icon.icon { fill: none; stroke: currentColor; stroke-width: 2; }
+.nav-icon svg { width: 1.1em; height: 1.1em; fill: currentColor; stroke: none; }
 
 /* Navigation right side (theme toggle + hamburger) */
 .nav-right {
@@ -467,7 +466,7 @@ pre .num { color: var(--yellow); }
 /* Mobile dropdown menu */
 .nav-menu {
   position: fixed;
-  top: 52px;
+  top: 48px;
   left: 0;
   right: 0;
   background: var(--bg-1);
@@ -475,7 +474,7 @@ pre .num { color: var(--yellow); }
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: var(--s2);
+  padding: var(--s1);
   transform: translateY(-100%);
   opacity: 0;
   visibility: hidden;
