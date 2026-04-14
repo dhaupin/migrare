@@ -1,6 +1,10 @@
+import Nav from "../components/Nav";
+import Footer from "../components/Footer";
+
 export default function Privacy() {
   return (
     <div className="page">
+      <Nav />
       <div className="page-container">
         <h1 className="page-title">Privacy Policy</h1>
         <p className="page-text">
@@ -22,6 +26,7 @@ export default function Privacy() {
           Last updated: April 2026
         </p>
       </div>
+      <Footer />
     </div>
   );
 }

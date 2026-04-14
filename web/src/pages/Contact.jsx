@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import Nav from "../components/Nav";
+import Footer from "../components/Footer";
 
 export default function Contact() {
   const [email, setEmail] = useState("");
@@ -10,6 +12,7 @@ export default function Contact() {
 
   return (
     <div className="page">
+      <Nav />
       <div className="page-container">
         <h1 className="page-title">Contact</h1>
         <p className="page-text">
@@ -22,6 +25,7 @@ export default function Contact() {
           We typically respond within 24-48 hours.
         </p>
       </div>
+      <Footer />
     </div>
   );
 }

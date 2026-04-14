@@ -1,6 +1,10 @@
+import Nav from "../components/Nav";
+import Footer from "../components/Footer";
+
 export default function Terms() {
   return (
     <div className="page">
+      <Nav />
       <div className="page-container">
         <h1 className="page-title">Terms of Service</h1>
         <p className="page-text">
@@ -18,6 +22,7 @@ export default function Terms() {
           Last updated: April 2026
         </p>
       </div>
+      <Footer />
     </div>
   );
 }
