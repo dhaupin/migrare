@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import GithubIcon from "./GithubIcon";
 
+const API = "";
+
 function MenuIcon() {
   return (
     <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -48,6 +50,7 @@ function MoonIcon() {
 export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState(null);
+  const [serverOk, setServerOk] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -55,6 +58,24 @@ export default function Nav() {
     const initial = stored || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
     setTheme(initial);
     document.documentElement.classList.toggle("light", initial === "light");
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API}/api/health`)
+      .then(r => r.json())
+      .then(d => setServerOk(d.ok === true))
+      .catch(() => setServerOk(false));
+  }, []);
+
+  // Auto-refresh every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch(`${API}/api/health`)
+        .then(r => r.json())
+        .then(d => setServerOk(d.ok === true))
+        .catch(() => setServerOk(false));
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const toggleTheme = () => {
@@ -83,6 +104,14 @@ export default function Nav() {
         migrare
       </Link>
       <div className="nav-right">
+        {/* API status indicator */}
+        {serverOk !== null && (
+          <span className="badge flex gap-2 items-center" style={{ marginRight: 8 }}>
+            <span className={`status-dot ${serverOk ? "dot-online" : "dot-offline"}`} />
+            <span className="t-dim t-xs">{serverOk ? "api online" : "api offline"}</span>
+          </span>
+        )}
+
         {/* Theme toggle */}
         <button
           className="nav-icon"
