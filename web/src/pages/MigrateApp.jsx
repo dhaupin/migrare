@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import JSZip from "jszip";
+import Nav from "../components/Nav";
 
 const GithubIcon = () => (
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ width: 18, height: 18, fill: "currentColor", display: "block" }}>

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import Nav from "../components/Nav";
+import Footer from "../components/Footer";
 
 const GithubIcon = () => (
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ width: 18, height: 18, fill: "currentColor", display: "block" }}>
@@ -48,21 +50,7 @@ const scanLines = [
 export default function Home() {
   return (
     <div className="page">
-      {/* Nav */}
-      <nav className="nav">
-        <span className="logo">
-          <span className="logo-dot" />
-          migrare
-        </span>
-        <div className="nav-links">
-          <Link to="/docs" className="nav-link">docs</Link>
-          <Link to="/for-ai" className="nav-link">for agents</Link>
-          <Link to="/app" className="nav-cta">
-            launch tool →
-          </Link>
-          <a href="https://github.com/dhaupin/migrare" target="_blank" rel="noopener noreferrer" className="nav-icon" aria-label="GitHub repository"><GithubIcon /></a>
-        </div>
-      </nav>
+      <Nav />
 
       {/* Hero */}
       <section className="hero hero-max fade-in">
@@ -215,30 +203,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="footer">
-        <span className="footer-logo">migrare</span>
-        <span className="footer-sep">·</span>
-        <span className="t-muted t-xs">MIT license</span>
-        <span className="footer-sep">·</span>
-        <a
-          href="https://github.com/dhaupin/migrare"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="footer-link"
-        >
-          github.com/dhaupin/migrare
-        </a>
-        <span className="footer-sep">·</span>
-        <a
-          href="https://creadev.org"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="footer-link"
-        >
-          creadev.org
-        </a>
-      </footer>
+      <Footer />
     </div>
   );
 }
