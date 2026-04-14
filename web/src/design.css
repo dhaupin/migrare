@@ -102,6 +102,19 @@
   --s-15: 96px;
   --s-16: 128px;
 
+  /* --- spacing (no dash for compatibility) --- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --s10: 40px;
+  --s12: 48px;
+  --s16: 64px;
+  --s20: 80px;
+
   /* --- radius, glow, misc --- */
   --r:         4px;
   --r-md:      6px;
@@ -430,13 +443,13 @@ pre .num { color: var(--yellow); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-dim);
+  color: var(--text);
   transition: color var(--tf) var(--ease);
   padding: 4px;
   border-radius: var(--r);
   margin-left: auto;
 }
-.nav-icon:hover { color: var(--text); text-decoration: none; }
+.nav-icon:hover { color: var(--accent); text-decoration: none; }
 .nav-icon svg { width: 18px; height: 18px; fill: currentColor; }
 
 .nav-cta {
