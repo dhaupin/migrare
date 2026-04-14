@@ -1,10 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Link } from "react-router-dom";
 import JSZip from "jszip";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import Tip from "../components/Tip";
-import GithubIcon from "../components/GithubIcon";
 
 const API = "";
 
@@ -46,28 +44,6 @@ function Spinner({ label, size = "" }) {
 
 // ─── sub-components ──────────────────────────────────────────────────────────
 
-function Topbar({ serverOk }) {
-  const dotCls = serverOk === null ? "" : serverOk ? "dot-online" : "dot-offline";
-  const statusText = serverOk === null ? "connecting…" : serverOk ? "api ready" : "api offline";
-
-  return (
-    <div className="topbar">
-      <Link to="/" className="logo">
-        <span className="logo-dot" />
-        migrare
-      </Link>
-      <div className="topbar-right">
-        <span className="badge flex gap-2 items-center">
-          <span className={`status-dot ${dotCls}`} />
-          {statusText}
-        </span>
-        <Link to="/" className="nav-link">← home</Link>
-        <a href="https://github.com/dhaupin/migrare" target="_blank" rel="noopener noreferrer" className="nav-icon" aria-label="GitHub repository"><GithubIcon /></a>
-      </div>
-    </div>
-  );
-}
-
 function DropZone({ onFile, loadedFile }) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef();
@@ -91,14 +67,14 @@ function DropZone({ onFile, loadedFile }) {
     >
       {loadedFile ? (
         <>
-          <span className="t-green" style={{ fontSize: 20 }}>✓</span>
-          <span className="t-white" style={{ fontSize: 12 }}>{loadedFile.name}</span>
+          <span className="t-green dropzone-icon-success">✓</span>
+          <span className="t-white dropzone-file">{loadedFile.name}</span>
           <span className="t-muted t-xs">{(loadedFile.size / 1024).toFixed(1)} KB · tap to replace</span>
         </>
       ) : (
         <>
-          <span className="t-muted" style={{ fontSize: 22 }}>⬇</span>
-          <span className="t-dim" style={{ fontSize: 12 }}>Drop or tap to upload ZIP</span>
+          <span className="t-muted dropzone-icon">⬇</span>
+          <span className="t-dim dropzone-copy">Drop or tap to upload ZIP</span>
           <span className="t-muted t-xs">.zip exports from Lovable, Bolt, Replit</span>
         </>
       )}
@@ -129,14 +105,13 @@ function ScanReport({ report }) {
       </div>
 
       {report.detectionSignals?.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center"
-          style={{ padding: "8px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-1)" }}>
+        <div className="signal-meta-row flex flex-wrap gap-2 items-center">
           <span className="t-label">via:</span>
           {report.detectionSignals.map(s => <span key={s} className="sig-tag">{s}</span>)}
         </div>
       )}
 
-      <div style={{ padding: "8px 16px", display: "flex", flexDirection: "column" }}>
+      <div className="signal-list">
         {report.signals?.length === 0 && (
           <div className="log-line">
             <span className="log-glyph t-green">✓</span>
@@ -329,7 +304,7 @@ export default function MigrateApp() {
 
           {/* source */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>source</span>
+            <span className="section-label section-label-inline">source</span>
             <Tip
               text="Export your project as a ZIP from Lovable (or zip a GitHub clone). Drop it here."
               
@@ -339,7 +314,7 @@ export default function MigrateApp() {
 
           {/* target */}
           <div className="flex items-center gap-2 mt-4 mb-2">
-            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>output format</span>
+            <span className="section-label section-label-inline">output format</span>
             <Tip
               text="Vite + React is framework-agnostic. Next.js uses App Router conventions."
               
@@ -360,7 +335,7 @@ export default function MigrateApp() {
                 {selectedTarget === t.id ? "◉" : "○"}
               </span>
               <div>
-                <div className="t-white" style={{ fontSize: 12 }}>{t.label}</div>
+                <div className="option-meta">{t.label}</div>
                 <div className="t-muted t-xs">{t.desc}</div>
               </div>
             </div>
@@ -385,7 +360,7 @@ export default function MigrateApp() {
 
             {/* migrate mode toggle + button */}
             <div className="flex items-center gap-2">
-              <div className="flex flex-col gap-1" style={{ flex: 1 }}>
+              <div className="flex flex-col gap-1 option-panel">
                 {/* toggle row */}
                 <div className="flex gap-1">
                   {[
@@ -394,13 +369,7 @@ export default function MigrateApp() {
                   ].map(m => (
                     <button
                       key={m.id}
-                      className={`btn btn-xs ${migMode === m.id ? "btn-ghost" : "btn-outline"}`}
-                      style={{
-                        flex: 1,
-                        justifyContent: "center",
-                        borderColor: migMode === m.id ? "var(--accent-dim)" : undefined,
-                        color: migMode === m.id ? "var(--accent)" : undefined,
-                      }}
+                      className={`btn btn-xs option-toggle ${migMode === m.id ? "btn-ghost is-active" : "btn-outline"}`}
                       onClick={() => setMigMode(m.id)}
                     >
                       {m.label}
@@ -468,7 +437,7 @@ export default function MigrateApp() {
         {/* ── right sidebar ── */}
         <aside className="sidebar-right">
           <div className="flex items-center gap-2 mb-3">
-            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>guide</span>
+            <span className="section-label section-label-inline">guide</span>
           </div>
 
           <div className="help-block">
@@ -487,7 +456,7 @@ export default function MigrateApp() {
           </div>
 
           <div className="flex items-center gap-2 mb-3">
-            <span className="section-label" style={{ marginBottom: 0, flex: 1 }}>transforms</span>
+            <span className="section-label section-label-inline">transforms</span>
           </div>
 
           <div className="flex flex-col gap-2">

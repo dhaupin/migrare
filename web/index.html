@@ -21,6 +21,17 @@
     />
     <meta property="og:url" content="https://migrare.creadev.org" />
     <meta name="twitter:card" content="summary" />
+    <script>
+      (() => {
+        try {
+          const stored = localStorage.getItem("theme");
+          const theme = stored || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (_) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

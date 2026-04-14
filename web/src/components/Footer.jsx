@@ -46,7 +46,7 @@ export default function Footer() {
       <div className="footer-col footer-col-right">
         {/* API status indicator */}
         {serverOk !== null && (
-          <span className="badge flex gap-2 items-center" style={{ marginRight: 12 }}>
+          <span className="badge badge-status-footer flex gap-2 items-center">
             <span className={`status-dot ${serverOk ? "dot-online" : "dot-offline"}`} />
             <span className="t-dim t-xs">{serverOk ? "api" : "offline"}</span>
           </span>

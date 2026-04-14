@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
@@ -84,7 +84,7 @@ export default function Home() {
         </div>
 
         {/* Scan output block — not a macOS window */}
-        <div className="scan-output" style={{ maxWidth: "620px", margin: "0 auto" }}>
+        <div className="scan-output">
           <div className="scan-output-header">
             <span className="t-muted t-xs">$ migrare scan my-app.zip</span>
           </div>
@@ -95,7 +95,7 @@ export default function Home() {
                 className="term-line fade-in"
                 style={{ animationDelay: `${i * 90 + 200}ms` }}
               >
-                <span className={line.cls} style={{ marginRight: "8px", flexShrink: 0, minWidth: "12px" }}>
+                <span className={`${line.cls} term-glyph`}>
                   {line.glyph}
                 </span>
                 {line.text.map((part, j) => {
