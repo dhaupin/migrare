@@ -218,9 +218,8 @@ VITE_API_DOMAIN=https://api.yourdomain.com`}</code></pre>
         <div className="flex flex-col gap-3">
           {[
             ["GitHub repo", "https://github.com/dhaupin/migrare", "Star it, file issues, contribute."],
-            ["CLI reference", "/docs/cli", "Full CLI command reference."],
             ["For AI agents", "/for-ai", "API documentation for AI agents."],
-            ["Source code", "View src/", "Understand how the engine works."],
+            ["Source code", "https://github.com/dhaupin/migrare/tree/main/src", "Understand how the engine works."],
           ].map(([title, href, desc]) => (
             <a
               key={title}
