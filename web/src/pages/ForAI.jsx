@@ -89,8 +89,8 @@ export default function ForAI() {
         </Link>
         <div className="nav-links">
           <Link to="/" className="nav-link">home</Link>
-          <a href="https://github.com/dhaupin/migrare" target="_blank" rel="noopener noreferrer" className="nav-icon" aria-label="GitHub repository"><GithubIcon /></a>
           <Link to="/app" className="nav-cta">launch tool →</Link>
+          <a href="https://github.com/dhaupin/migrare" target="_blank" rel="noopener noreferrer" className="nav-icon" aria-label="GitHub repository"><GithubIcon /></a>
         </div>
       </nav>
 

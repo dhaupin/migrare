@@ -475,8 +475,8 @@ export default function MigrateApp() {
                       style={{
                         flex: 1,
                         justifyContent: "center",
-                        borderColor: migMode === m.id ? "var(--green-dim)" : undefined,
-                        color: migMode === m.id ? "var(--green)" : undefined,
+                        borderColor: migMode === m.id ? "var(--accent-dim)" : undefined,
+                        color: migMode === m.id ? "var(--accent)" : undefined,
                       }}
                       onClick={() => setMigMode(m.id)}
                     >
