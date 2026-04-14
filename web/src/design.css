@@ -516,6 +516,12 @@ pre .num { color: var(--yellow); }
 /* Hide desktop nav elements on mobile */
 .nav-links { display: none; }
 
+/* Hide hamburger on desktop (when nav-links is visible) */
+.nav-hamburger { display: none; }
+@media (max-width: 479px) {
+  .nav-hamburger { display: inline-flex; }
+}
+
 .nav-cta {
   color: var(--accent);
   font-size: var(--t-sm);
