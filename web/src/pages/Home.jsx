@@ -56,10 +56,10 @@ export default function Home() {
         </span>
         <div className="nav-links">
           <Link to="/for-ai" className="nav-link">for agents</Link>
-          <a href="https://github.com/dhaupin/migrare" target="_blank" rel="noopener noreferrer" className="nav-icon" aria-label="GitHub repository"><GithubIcon /></a>
           <Link to="/app" className="nav-cta">
             launch tool →
           </Link>
+          <a href="https://github.com/dhaupin/migrare" target="_blank" rel="noopener noreferrer" className="nav-icon" aria-label="GitHub repository"><GithubIcon /></a>
         </div>
       </nav>
 
@@ -173,14 +173,14 @@ export default function Home() {
                 className="status-dot"
                 style={
                   p.status === "ready"
-                    ? { background: "var(--green)", boxShadow: "0 0 6px var(--green)" }
+                    ? { background: "var(--accent)", boxShadow: "0 0 6px var(--accent)" }
                     : { background: "var(--text-muted)" }
                 }
               />
               <span className="platform-chip-name">{p.name}</span>
               <span
                 className="platform-chip-status"
-                style={{ color: p.status === "ready" ? "var(--green)" : "var(--text-muted)" }}
+                style={{ color: p.status === "ready" ? "var(--accent)" : "var(--text-muted)" }}
               >
                 {p.status}
               </span>
