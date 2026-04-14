@@ -115,6 +115,9 @@
   --s16: 64px;
   --s20: 80px;
 
+  /* Default to dark mode if no preference */
+  --topbar-h: 52px;
+
   /* --- radius, glow, misc --- */
   --r:         4px;
   --r-md:      6px;

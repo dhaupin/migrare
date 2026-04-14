@@ -13,9 +13,10 @@ function ThemeManager({ children }) {
   const [theme, setTheme] = useState(null);
 
   useEffect(() => {
+    // Default to light mode, respect system preference and stored choice
     const stored = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial = stored || (prefersDark ? "dark" : "light");
+    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    const initial = stored || (prefersLight ? "light" : "dark");
     setTheme(initial);
     document.documentElement.classList.toggle("light", initial === "light");
   }, []);

@@ -11,8 +11,10 @@ export default function Nav() {
   const location = useLocation();
 
   useEffect(() => {
+    // Default to light mode, respect system preference and stored choice
     const stored = localStorage.getItem("theme");
-    const initial = stored || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    const initial = stored || (prefersLight ? "light" : "dark");
     setTheme(initial);
     document.documentElement.classList.toggle("light", initial === "light");
   }, []);
