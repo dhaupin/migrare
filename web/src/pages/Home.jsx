@@ -66,7 +66,7 @@ export default function Home() {
       {/* Hero */}
       <section className="hero hero-max fade-in">
         <div className="hero-eyebrow">
-          <span className="badge badge-green">v0.0.1</span>
+          <span className="badge badge-green">v0.1.0</span>
           <span className="t-muted">·</span>
           <span className="t-dim t-xs">Lovable support live</span>
           <span className="t-muted">·</span>

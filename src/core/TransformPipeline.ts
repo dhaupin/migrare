@@ -122,7 +122,9 @@ export class TransformPipeline {
 
       // Check applicability — may be signal-driven or self-assessed
       const signal = relatedSignals[0]; // primary signal, if any
-      const ctx: TransformContext = { ...baseCtx, signal };
+      const ctx: TransformContext = signal 
+        ? { ...baseCtx, signal }
+        : { ...baseCtx };
 
       const applicable = transform.appliesTo(graph, ctx);
       if (!applicable) {
@@ -178,8 +180,8 @@ export class TransformPipeline {
     const conflicts: TransformConflict[] = [];
     for (let i = 0; i < transforms.length; i++) {
       for (let j = i + 1; j < transforms.length; j++) {
-        const a = transforms[i];
-        const b = transforms[j];
+        const a = transforms[i]!;
+        const b = transforms[j]!;
         const platformOverlap = a.platforms.some((p) => b.platforms.includes(p));
         if (a.category === b.category && platformOverlap) {
           conflicts.push({

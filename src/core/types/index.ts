@@ -123,6 +123,36 @@ export interface ProjectGraph {
   getFile(path: string): ProjectFile | undefined;
   /** Prefer this over iterating `files` directly — it is the stable API. */
   findFiles(pattern: RegExp | ((f: ProjectFile) => boolean)): ProjectFile[];
+  /** Create a deep copy of the graph */
+  snapshot(): ProjectGraph;
+  /** Serialize to JSON-friendly format */
+  serialize(): SerializedGraph;
+  /** Check if a dependency exists */
+  hasDependency(name: string): boolean;
+  /** Get a specific dependency */
+  getDependency(name: string): ProjectDependency | undefined;
+  /** Serialize to JSON-friendly format */
+  serialize(): SerializedGraph;
+  /** All unique file extensions in the graph */
+  readonly extensions: Set<string>;
+}
+
+/** Output of ProjectGraph.serialize() */
+export interface SerializedGraph {
+  root: string;
+  files: SerializedFile[];
+  dependencies: ProjectDependency[];
+  env: Record<string, string>;
+  meta: Record<string, unknown>;
+}
+
+/** A serialized file (content preserved, AST dropped) */
+export interface SerializedFile {
+  path: string;
+  content: string;
+  encoding: "utf8" | "binary";
+  modified: boolean;
+  meta: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -533,6 +563,8 @@ export interface FileSystemEntry {
  * calling `scan()` or `migrate()`.
  */
 export interface MigrareEngine {
+  /** Logger for emit logs, errors */
+  logger: MigrareLogger;
   /** Register a platform plugin. Wires its scanners, transforms, validators. */
   registerPlugin(plugin: IPlugin): void;
   /** Register an output adapter. e.g. ViteAdapter, GitHubPRAdapter. */

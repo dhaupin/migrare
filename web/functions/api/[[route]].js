@@ -907,7 +907,7 @@ export async function onRequest({ request, env }) {
     let response;
 
     if (path === "/api/health" && method === "GET") {
-      response = Response.json({ ok: true, version: "0.0.1" }, { headers: corsHeaders });
+      response = Response.json({ ok: true, version: "0.1.0" }, { headers: corsHeaders });
     } else if (path === "/api/spec" && method === "GET") {
       response = await handleSpec(corsHeaders);
     } else if (path === "/api/scan" && method === "POST") {
