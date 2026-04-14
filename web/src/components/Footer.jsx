@@ -39,6 +39,8 @@ export default function Footer() {
       <span className="footer-sep">·</span>
       <Link to="/for-ai" className="footer-link">For AI</Link>
       <span className="footer-sep">·</span>
+      <Link to="/contact" className="footer-link">Contact</Link>
+      <span className="footer-sep">·</span>
       <a
         href="https://github.com/dhaupin/migrare"
         target="_blank"
@@ -49,6 +51,10 @@ export default function Footer() {
         Source
       </a>
       <span className="footer-sep">·</span>
+      <Link to="/terms" className="footer-link">Terms</Link>
+      <span className="footer-sep">·</span>
+      <Link to="/privacy" className="footer-link">Privacy</Link>
+      <span className="footer-sep">·</span>
       <a
         href="https://github.com/dhaupin/migrare/blob/main/LICENSE"
         target="_blank"
@@ -57,6 +63,24 @@ export default function Footer() {
       >
         MIT license
       </a>
+      <span className="footer-sep" style={{ marginLeft: 'auto' }}>·</span>
+      <a
+        href="https://creadev.org"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="footer-link"
+        title="Creadev"
+      >
+        <img 
+          src="https://creadev.org/creadev-logoset-67h.png" 
+          alt="Creadev" 
+          style={{ height: 14, width: 'auto' }} 
+        />
+      </a>
+      <span className="footer-sep">·</span>
+      <span className="t-muted t-xs">
+        © {new Date().getFullYear()} migrare
+      </span>
     </footer>
   );
 }

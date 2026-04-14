@@ -449,7 +449,7 @@ pre .num { color: var(--yellow); }
   border-radius: var(--r);
 }
 .nav-icon:hover { color: var(--accent); text-decoration: none; }
-.nav-icon svg { width: 18px; height: 18px; fill: currentColor; }
+.nav-icon svg { width: 18px; height: 18px; }
 .nav-icon.icon { stroke: currentColor; stroke-width: 2; fill: none; }
 
 /* Navigation right side (theme toggle + hamburger) */
@@ -1173,6 +1173,26 @@ pre .num { color: var(--yellow); }
 .footer-link { color: var(--text-dim); transition: color var(--tf) var(--ease); display: inline-flex; align-items: center; gap: var(--s1); }
 .footer-link:hover { color: var(--text); text-decoration: none; }
 .footer-link svg { width: 14px; height: 14px; }
+
+/* Tip tooltip */
+.tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  border-radius: 50%;
+  cursor: help;
+  transition: color var(--tf) var(--ease), background var(--tf) var(--ease);
+}
+.tip:hover {
+  color: var(--text);
+  background: var(--bg-3);
+}
 
 /* ─── 18. ANIMATIONS ─────────────────────────────────────────────────────── */
 
