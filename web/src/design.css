@@ -1156,23 +1156,40 @@ pre .num { color: var(--yellow); }
 .cta-strip-sub      { font-family: var(--sans); font-size: var(--t-md); color: var(--text-dim); max-width: 380px; line-height: 1.6; }
 .cta-strip-actions  { display: flex; gap: var(--s3); flex-wrap: wrap; justify-content: center; }
 
+/* page layout */
+.page { flex: 1; display: flex; flex-direction: column; padding: var(--s6) var(--s5); }
+.page-container { max-width: 640px; margin: 0 auto; width: 100%; }
+.page-title { font-family: var(--sans); font-size: var(--t-3xl); font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: var(--s4); }
+.page-heading { font-family: var(--sans); font-size: var(--t-lg); font-weight: 600; color: var(--text); margin: var(--s5) 0 var(--s2); }
+.page-text { font-size: var(--t-md); color: var(--text-dim); line-height: 1.7; margin-bottom: var(--s3); }
+.page-text a { color: var(--accent); text-decoration: none; }
+.page-text a:hover { text-decoration: underline; }
+
 /* footer */
 .footer {
   margin-top: auto;
   border-top: 1px solid var(--border);
-  padding: var(--s4);
+  padding: var(--s4) var(--s6);
   display: flex;
+  justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--s3);
   font-size: var(--t-xs);
   background: var(--bg-1);
 }
-.footer-logo { color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; }
+.footer-col { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.footer-col-right { justify-content: flex-end; }
+.footer-logo { color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; }
 .footer-sep  { color: var(--text-muted); }
-.footer-link { color: var(--text-dim); transition: color var(--tf) var(--ease); display: inline-flex; align-items: center; gap: var(--s1); }
+.footer-link { color: var(--text-dim); transition: color var(--tf) var(--ease); display: inline-flex; align-items: center; gap: var(--s1); white-space: nowrap; }
 .footer-link:hover { color: var(--text); text-decoration: none; }
 .footer-link svg { width: 14px; height: 14px; }
+
+@media (max-width: 640px) {
+  .footer { flex-direction: column; align-items: flex-start; padding: var(--s4); }
+  .footer-col-right { justify-content: flex-start; }
+}
 
 /* ─── 18. ANIMATIONS ─────────────────────────────────────────────────────── */
 

@@ -45,6 +45,33 @@ export default {
         description: 'How to use migrare: CLI commands, Supabase migration guide, FAQs, and quick start.',
       },
     },
+    {
+      path:       '/contact',
+      priority:   '0.5',
+      changefreq: 'monthly',
+      meta: {
+        title:       'Contact — migrare',
+        description: 'Get in touch with the migrare team.',
+      },
+    },
+    {
+      path:       '/terms',
+      priority:   '0.5',
+      changefreq: 'monthly',
+      meta: {
+        title:       'Terms of Service — migrare',
+        description: 'Terms of Service for using migrare.',
+      },
+    },
+    {
+      path:       '/privacy',
+      priority:   '0.5',
+      changefreq: 'monthly',
+      meta: {
+        title:       'Privacy Policy — migrare',
+        description: 'Privacy Policy for migrare.',
+      },
+    },
   ],
 
   buildJsonLd() {
