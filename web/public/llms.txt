@@ -8,6 +8,7 @@ clean, portable, self-owned codebase. MIT licensed. No auth required.
 
 Source: https://github.com/dhaupin/migrare
 Web tool: https://migrare.creadev.org/app
+Docs: https://migrare.creadev.org/docs
 Agent docs: https://migrare.creadev.org/for-ai
 API spec: https://migrare.creadev.org/api/spec
 

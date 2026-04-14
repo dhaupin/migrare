@@ -55,6 +55,7 @@ export default function Home() {
           migrare
         </span>
         <div className="nav-links">
+          <Link to="/docs" className="nav-link">docs</Link>
           <Link to="/for-ai" className="nav-link">for agents</Link>
           <Link to="/app" className="nav-cta">
             launch tool →
