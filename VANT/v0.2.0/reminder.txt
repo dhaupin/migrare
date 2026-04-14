@@ -1,0 +1,27 @@
+
+=== QUICK START ===
+
+Load order for fresh session:
+
+1. cat README.txt
+2. cat v0.2.0/manifesto.txt
+3. cat v0.2.0/humility.txt    ← READ THIS FIRST
+4. cat v0.2.0/covenant.txt
+
+Then ask: "What's the current state?"
+
+=== CURRENT CONTEXT ===
+
+- migrare repo: https://github.com/dhaupin/migrare
+- stegoframe: https://stegoframe.creadev.org
+- Room: w3uupk, passphrase: stegoframe-demo-2026
+- PR #13: migrare audit (pending)
+- PR #14: VANT brain
+
+=== WHAT'S NEXT ===
+
+- migrare audit results (in PR #13)
+- stegoframe API for agents
+- stegoframe nesting (Russian doll)
+
+Let's build.
