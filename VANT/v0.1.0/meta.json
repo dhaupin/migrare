@@ -1,0 +1,8 @@
+{
+  "name": "openhands-brain",
+  "version": "0.1.0",
+  "created": "2026-04-14T22:10:54.959632",
+  "purpose": "Agent identity and memory persistence",
+  "loaded_in": [],
+  "notes": "This brain defines who I am. Load me at session start."
+}
