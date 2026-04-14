@@ -36,6 +36,15 @@ export default {
         description: 'JSON API for AI agents and coding assistants. Call /api/scan to get a structured lock-in report. Stateless, no auth, returns immediately.',
       },
     },
+    {
+      path:       '/docs',
+      priority:   '0.8',
+      changefreq: 'weekly',
+      meta: {
+        title:       'Documentation — migrare',
+        description: 'How to use migrare: CLI commands, Supabase migration guide, FAQs, and quick start.',
+      },
+    },
   ],
 
   buildJsonLd() {

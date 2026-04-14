@@ -5,6 +5,7 @@ import "./design.css";
 import Home from "./pages/Home.jsx";
 import MigrateApp from "./pages/MigrateApp.jsx";
 import ForAI from "./pages/ForAI.jsx";
+import Docs from "./pages/Docs.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -23,6 +24,7 @@ export default function AppLayout() {
           <Route path="/"      element={<Home />} />
           <Route path="/app"   element={<MigrateApp />} />
           <Route path="/for-ai" element={<ForAI />} />
+          <Route path="/docs" element={<Docs />} />
           <Route path="*"      element={<Home />} />
         </Routes>
       </div>
