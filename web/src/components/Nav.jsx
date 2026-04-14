@@ -104,6 +104,20 @@ export default function Nav() {
         <span className="logo-dot" />
         migrare
       </Link>
+      
+      {/* Desktop nav links - visible on larger screens */}
+      <div className="nav-links">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            to={item.href}
+            className="nav-link"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+
       <div className="nav-right">
         {/* API status indicator */}
         {serverOk !== null && (

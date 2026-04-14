@@ -449,7 +449,11 @@ pre .num { color: var(--yellow); }
   border-radius: var(--r);
 }
 .nav-icon:hover { color: var(--accent); text-decoration: none; }
-.nav-icon svg { width: 1.1em; height: 1.1em; fill: currentColor; stroke: none; }
+.nav-icon svg { width: 1.1em; height: 1.1em; }
+/* Stroke-based icons (menu, sun, moon) - use currentColor for stroke */
+.nav-icon svg[fill="none"] { fill: none; stroke: currentColor; stroke-width: 2; }
+/* Filled icons (github) - use currentColor for fill */
+.nav-icon svg:not([fill="none"]) { fill: currentColor; stroke: none; }
 
 /* Navigation right side (theme toggle + hamburger) */
 .nav-right {
@@ -1261,6 +1265,7 @@ pre .num { color: var(--yellow); }
 @media (min-width: 480px) {
   .feature-grid { grid-template-columns: 1fr 1fr; }
   .nav { padding: 0 var(--s6); }
+  .nav-links { display: flex; }
   .hero { padding: var(--s16) var(--s6) var(--s12); }
   .section { padding: var(--s10) var(--s6); }
   .footer { padding: var(--s4) var(--s6); }
