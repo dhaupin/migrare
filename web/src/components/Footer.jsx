@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import GithubIcon from "./GithubIcon";
 
 const API = "";
+const LOGO = "/creadev-logoset-67h.png";
 
 export default function Footer() {
   const [serverOk, setServerOk] = useState(null);
@@ -28,7 +29,7 @@ export default function Footer() {
   return (
     <footer className="footer">
       <div className="footer-col footer-col-left">
-        <span className="footer-logo">migrare</span>
+        <img src={LOGO} alt="migrare" className="footer-logo-img" />
         <span className="footer-sep">·</span>
         <span className="t-dim t-xs">© {year} Creadev</span>
         <span className="footer-sep">·</span>
