@@ -63,39 +63,9 @@
   --cyan:         #40c4ff;
   --cyan-faint:   rgba(64, 196, 255, 0.1);
 
-}
-
-/* Light mode */
-:root.light {
-  /* --- core palette --- */
-  --bg:           #f5f7f5;
-  --bg-1:         #ebefeb;
-  --bg-2:         #e1e6e1;
-  --bg-3:         #d6dbd6;
-  --bg-4:         #cbd0cb;
-  --bg-5:         #c0c5c0;
-
-  /* --- borders --- */
-  --border:       #c8d1c8;
-  --border-hi:    #a8b5a8;
-  --border-focus: #00a152;
-
-  /* --- accent --- */
-  --accent:        #00a628;
-  --accent-dim:    #188a2c;
-  --accent-faint:  rgba(0, 166, 40, 0.08);
-  --accent-glow:   rgba(0, 166, 40, 0.15);
-  --accent-glow2:  rgba(0, 166, 40, 0.25);
-
-  /* --- text --- */
-  --text:         #1a2b1a;
-  --text-dim:     #4a5a4a;
-  --text-muted:   #6a7a6a;
-  --text-inv:     #f5f7f5;
-
   /* --- sidebar accent --- */
-  --sidebar-accent:      #eef3ee;
-  --sidebar-accent-top:  linear-gradient(180deg, #e8ebe8 0%, var(--bg-1) 100%);
+  --sidebar-accent:      #0a100a;
+  --sidebar-accent-top:  linear-gradient(180deg, #0d140d 0%, var(--bg-1) 100%);
   --sidebar-inset:       inset 3px 0 0 var(--accent-dim);
 
   /* --- typography --- */
@@ -142,60 +112,29 @@
   --tf:        0.18s;
 }
 
-/* Dark overrides only - :root already has all other variables */
+/* Light mode - only override colors (other tokens inherit from :root) */
 :root.light {
-  /* --- core palette --- */
   --bg:           #f5f7f5;
-  --t-md:   15px;
-  --t-lg:   17px;
-  --t-xl:   18px;
-  --t-2xl:  clamp(1.5rem, 4vw, 2.2rem);
-  --t-3xl:  clamp(1.9rem, 5.5vw, 3.2rem);
-
-  /* --- spacing scale --- */
-  --s1:  4px;
-  --s2:  8px;
-  --s3:  12px;
-  --s4:  16px;
-  --s5:  20px;
-  --s6:  24px;
-  --s8:  32px;
-  --s10: 40px;
-  --s12: 48px;
-  --s16: 64px;
-  --s20: 80px;
-
-  /* --- radii --- */
-  --r:    3px;
-  --r-md: 6px;
-  --r-lg: 10px;
-
-  /* --- motion --- */
-  --ease:     cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --tf:  100ms;   /* fast */
-  --tb:  200ms;   /* base */
-  --ts:  340ms;   /* slow */
-
-  /* --- shadows --- */
-  --shadow-sm: 0 1px 4px rgba(0,0,0,0.45);
-  --shadow-md: 0 4px 14px rgba(0,0,0,0.55);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.65);
-  --glow:      0 0 14px var(--accent-glow), 0 0 40px rgba(0,230,118,0.07);
-
-  /* --- app layout --- */
-  --topbar-h:  44px;
-  --sidebar-w: 260px;
-
-  /* --- content widths --- */
-  --w-content: 900px;
-  --w-hero:    720px;
-  --w-narrow:  560px;
-
-  /* --- tooltip --- */
-  --tooltip-bg:      #1a261a;
-  --tooltip-border:  var(--border-hi);
-  --tooltip-delay:   320ms;
+  --bg-1:         #ebefeb;
+  --bg-2:         #e1e6e1;
+  --bg-3:         #d6dbd6;
+  --bg-4:         #cbd0cb;
+  --bg-5:         #c0c5c0;
+  --border:       #c8d1c8;
+  --border-hi:    #a8b5a8;
+  --border-focus: #00a152;
+  --accent:        #00a628;
+  --accent-dim:    #188a2c;
+  --accent-faint:  rgba(0, 166, 40, 0.08);
+  --accent-glow:   rgba(0, 166, 40, 0.15);
+  --accent-glow2:  rgba(0, 166, 40, 0.25);
+  --text:         #1a2b1a;
+  --text-dim:     #4a5a4a;
+  --text-muted:   #6a7a6a;
+  --text-inv:     #f5f7f5;
+  --sidebar-accent:      #eef3ee;
+  --sidebar-accent-top:  linear-gradient(180deg, #e8ebe8 0%, var(--bg-1) 100%);
+  --sidebar-inset:       inset 3px 0 0 var(--accent-dim);
 }
 
 /* ─── 2. RESET ───────────────────────────────────────────────────────────── */
