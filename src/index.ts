@@ -20,6 +20,7 @@ export type * from "./auth/types/index.js";
 
 // Plugins
 export { LovablePlugin } from "./plugins/lovable/LovablePlugin.js";
+export type { GitHubPROptions } from "./adapters/output/GitHubPRAdapter.js";
 
 // Output Adapters
 export { ViteAdapter, NextAdapter, LocalFSAdapter } from "./adapters/output/index.js";
@@ -58,7 +59,10 @@ export interface CreateEngineOptions {
 export async function createEngine(
   options: CreateEngineOptions = {}
 ): Promise<MigrareEngine & { auth: AuthRegistry }> {
-  const engine = new MigrareEngine({ logger: options.logger }) as MigrareEngine & { auth: AuthRegistry };
+  const engineOptions = options.logger 
+    ? { logger: options.logger } 
+    : {};
+  const engine = new MigrareEngine(engineOptions) as MigrareEngine & { auth: AuthRegistry };
   const auth = new AuthRegistry();
   engine.auth = auth;
 
@@ -107,21 +111,37 @@ export interface CreateGitHubMigrationOptions {
 export async function createGitHubMigration(options: CreateGitHubMigrationOptions) {
   const { GitHubIngestAdapter } = await import("./adapters/github/GitHubIngestAdapter.js");
   const { GitHubPRAdapter } = await import("./adapters/output/GitHubPRAdapter.js");
-
+  
+  // Type for GitHub PR adapter options - mirrors GitHubPRAdapter.ts
+  interface PRAdapterOptions {
+    owner: string;
+    repo: string;
+    baseBranch?: string;
+    branchPrefix?: string;
+    draftPR?: boolean;
+    labels?: string[];
+  }
+  
+  const engineOptions: { logger?: MigrareLogger; auth?: { session: AuthSession } } = {};
+  if (options.logger) engineOptions.logger = options.logger;
+  if (options.session) engineOptions.auth = { session: options.session };
+  
   const engine = await createEngine({
     plugins: options.plugins ?? ["lovable"],
-    logger: options.logger,
-    auth: { session: options.session },
+    ...engineOptions,
   });
 
   const ingest = new GitHubIngestAdapter(options.session);
-  const prAdapter = new GitHubPRAdapter(options.session, {
+  const prAdapterOptions: PRAdapterOptions = {
     owner: options.owner,
     repo: options.repo,
-    baseBranch: options.baseBranch,
     draftPR: options.draftPR ?? false,
     labels: ["migrare"],
-  });
+  };
+  if (options.baseBranch) {
+    prAdapterOptions.baseBranch = options.baseBranch;
+  }
+  const prAdapter = new GitHubPRAdapter(options.session, prAdapterOptions);
 
   engine.registerOutputAdapter(prAdapter);
 

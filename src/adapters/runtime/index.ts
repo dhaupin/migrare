@@ -46,18 +46,52 @@ export class CLIRuntimeAdapter implements IRuntimeAdapter {
 
     this.logger.info(`Loading project from filesystem`, { path: source });
 
-    // In a real implementation:
-    // const { readdir, readFile, stat } = await import("fs/promises");
-    // const path = await import("path");
-    //
-    // Recursively walk source directory, build ProjectGraph
-    // const graph = new ProjectGraph({ root: source });
-    // ... walk and populate ...
-    // return graph;
+    const { readdir, readFile, stat } = await import("fs/promises");
+    const pathModule = await import("path");
 
-    // Stub for now — returns empty graph at the given root
+    // Recursively walk source directory, build ProjectGraph
     const graph = new ProjectGraph({ root: source });
-    this.logger.warn(`CLIRuntimeAdapter: filesystem walking not yet implemented — returning empty graph`);
+
+    const walkDir = async (dirPath: string, prefix: string = ""): Promise<void> => {
+      const entries = await readdir(dirPath, { withFileTypes: true });
+
+      for (const entry of entries) {
+        // Skip common directories that shouldn't be in the project graph
+        if (entry.name === "node_modules" || entry.name === ".git" || entry.name === "dist" || entry.name === "build") {
+          continue;
+        }
+
+        const fullPath = pathModule.join(dirPath, entry.name);
+        const relativePath = prefix ? pathModule.join(prefix, entry.name) : entry.name;
+
+        if (entry.isDirectory()) {
+          await walkDir(fullPath, relativePath);
+        } else if (entry.isFile()) {
+          try {
+            const fileStat = await stat(fullPath);
+            // Skip large files (> 1MB)
+            if (fileStat.size > 1024 * 1024) {
+              this.logger.warn(`Skipping large file: ${relativePath} (${fileStat.size} bytes)`);
+              continue;
+            }
+
+            const content = await readFile(fullPath, "utf8");
+            graph.addFile({
+              path: relativePath,
+              content,
+              encoding: "utf8",
+              modified: false,
+              meta: {},
+            });
+          } catch (err) {
+            this.logger.warn(`Error reading file ${relativePath}: ${err}`);
+          }
+        }
+      }
+    };
+
+    await walkDir(source);
+    this.logger.info(`Loaded ${graph.files.size} files from ${source}`);
     return graph;
   }
 
@@ -101,13 +135,15 @@ export class CLIRuntimeAdapter implements IRuntimeAdapter {
 export class BrowserRuntimeAdapter implements IRuntimeAdapter {
   readonly id = "browser";
 
-  private onProgress?: (event: ProgressEvent) => void;
+  private onProgress!: (event: ProgressEvent) => void | undefined;
 
   constructor(
     private readonly logger: MigrareLogger,
     options: { onProgress?: (event: ProgressEvent) => void } = {}
   ) {
-    this.onProgress = options.onProgress;
+    if (options.onProgress) {
+      this.onProgress = options.onProgress;
+    }
   }
 
   /**

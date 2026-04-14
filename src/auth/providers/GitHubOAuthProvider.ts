@@ -176,8 +176,6 @@ export class GitHubOAuthProvider implements IAuthProvider {
       id: generateId(16),
       providerId: "github-oauth",
       createdAt: new Date(),
-      // GitHub OAuth tokens don't have expiry by default
-      expiresAt: undefined,
       user,
       token: access_token,
       scopes: (scope ?? "").split(",").map((s: string) => s.trim()),

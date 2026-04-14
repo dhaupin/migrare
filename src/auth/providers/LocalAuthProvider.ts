@@ -75,7 +75,6 @@ export class LocalAuthProvider implements IAuthProvider {
       id: generateId(16),
       providerId: "local",
       createdAt: new Date(),
-      expiresAt: undefined,   // PATs don't expire unless configured
       user,
       token,
       scopes,
