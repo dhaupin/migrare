@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import Tip from "../components/Tip";
+import GithubIcon from "../components/GithubIcon";
 
 const API = "";
 

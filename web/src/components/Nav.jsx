@@ -96,8 +96,6 @@ export default function Nav() {
     { href: "/docs", label: "Docs" },
     { href: "/for-ai", label: "For AI" },
     { href: "/contact", label: "Contact" },
-    { href: "/terms", label: "Terms" },
-    { href: "/privacy", label: "Privacy" },
   ];
 
   return (

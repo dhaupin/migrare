@@ -449,8 +449,8 @@ pre .num { color: var(--yellow); }
   border-radius: var(--r);
 }
 .nav-icon:hover { color: var(--accent); text-decoration: none; }
-.nav-icon svg { width: 18px; height: 18px; fill: currentColor; }
-.nav-icon.icon { stroke: currentColor; stroke-width: 2; fill: none; }
+.nav-icon svg { width: 18px; height: 18px; }
+.nav-icon.icon { fill: none; stroke: currentColor; stroke-width: 2; }
 
 /* Navigation right side (theme toggle + hamburger) */
 .nav-right {
@@ -1181,6 +1181,7 @@ pre .num { color: var(--yellow); }
 .footer-col { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
 .footer-col-right { justify-content: flex-end; }
 .footer-logo { color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; }
+.footer-logo-img { height: 1em; width: auto; vertical-align: middle; }
 .footer-sep  { color: var(--text-muted); }
 .footer-link { color: var(--text-dim); transition: color var(--tf) var(--ease); display: inline-flex; align-items: center; gap: var(--s1); white-space: nowrap; }
 .footer-link:hover { color: var(--text); text-decoration: none; }
