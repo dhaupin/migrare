@@ -129,7 +129,14 @@ export class GitHubAppProvider implements IAuthProvider {
   async refresh(session: AuthSession): Promise<AuthSession> {
     // Installation tokens expire after 1 hour — re-authenticate
     if (session.expiresAt && session.expiresAt < new Date()) {
-      return this.authenticate({ runtime: "server", installationId: session.installationId });
+      if (!session.installationId) {
+        throw new Error("Cannot refresh: missing installationId");
+      }
+      const result = await this.authenticate({ runtime: "server", installationId: session.installationId });
+      if ("redirectUrl" in result) {
+        throw new Error("Cannot refresh: OAuth redirect not supported for GitHub App");
+      }
+      return result;
     }
     return session;
   }

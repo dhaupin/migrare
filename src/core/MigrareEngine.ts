@@ -113,6 +113,11 @@ export class MigrareEngine implements IMigrareEngine {
       this.validation.register(validator);
     }
 
+// Store plugin with hooks if provided
+    if (plugin.hooks) {
+      plugin.hooks = plugin.hooks;
+    }
+    
     this.plugins.set(plugin.meta.id, plugin);
     this.logger.info(`Plugin registered`, { id: plugin.meta.id, name: plugin.meta.name });
     this.emit("plugin:registered", plugin);
@@ -151,6 +156,10 @@ export class MigrareEngine implements IMigrareEngine {
 
     // Use the highest-confidence detected platform
     const platform = platforms[0];
+    if (!platform) {
+      this.logger.warn(`No platform detected — returning empty scan report`);
+      return this.emptyReport("unknown");
+    }
 
     await this.runPluginHook(platform, "before:scan", graph);
     const report = await this.scanner.scan(graph, platform, options);
@@ -243,8 +252,8 @@ export class MigrareEngine implements IMigrareEngine {
       transformCtx,
       scanReport.signals,
       {
-        include: options.transforms?.include,
-        exclude: options.transforms?.exclude,
+        ...(options.transforms?.include ? { include: options.transforms.include } : {}),
+        ...(options.transforms?.exclude ? { exclude: options.transforms.exclude } : {}),
         stopOnError: false,
         // Delegate conflict resolution to the plugin's hook, falling back to "first wins"
         onConflict: (c) => {
@@ -398,8 +407,15 @@ export class MigrareEngine implements IMigrareEngine {
       }
     }
 
-    const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    results.sort((a, b) => order[a.result.confidence] - order[b.result.confidence]);
+    const getOrder = (c: string): number => {
+      const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
+      return order[c] ?? 2;
+    };
+    results.sort((a, b) => {
+      const confA = a.result!.confidence ?? "low";
+      const confB = b.result!.confidence ?? "low";
+      return getOrder(confA) - getOrder(confB);
+    });
     return results.map((r) => r.platform);
   }
 

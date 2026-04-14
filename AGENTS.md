@@ -26,7 +26,7 @@ The core value proposition: **your code belongs to you**.
 ## Package namespace
 
 ```
-@migrare/core       The engine, types, interfaces — LTS, signed
+@migrare/core       The engine, types, interfaces
 @migrare/github     GitHub OAuth, App, ingest, and PR adapter — first-party
 @migrare/lovable    Lovable platform plugin — reference implementation
 @migrare/bolt       (planned) Bolt.new plugin
@@ -415,7 +415,8 @@ These stubs exist in the codebase but are not wired end-to-end:
 
 | Component | Status | What's missing |
 |---|---|---|
-| `CLIRuntimeAdapter.loadProject()` | Stub | Node.js filesystem walker (`fs.readdir` recursive) |
+| `CLIRuntimeAdapter.loadProject()` | ✅ Implemented | Recursive directory walking with fs/promises |
+| `LocalFSAdapter.write()` | ✅ Implemented | Actual file writes with directory creation |
 | `BrowserRuntimeAdapter.loadProject()` | Stub | ZIP parsing (JSZip) + File System Access API wiring |
 | `BrowserRuntimeAdapter.deliverOutput()` | Stub | ZIP download trigger or PR URL redirect |
 | `/api/auth/github/token` | Not implemented | The one server-side code exchange endpoint |
@@ -436,16 +437,14 @@ When writing tests:
 
 ---
 
-## LTS and versioning
+## Versioning
 
-`@migrare/core` and `@migrare/github` follow an LTS model:
-- Even minor versions are LTS: `0.2`, `0.4`, `1.0`, `1.2`
-- Odd minor versions are current: `0.1`, `0.3`
-- Breaking changes only in major versions with a 12-month deprecation window
-- `@migrare/lovable` and community plugins follow their own semver — no LTS guarantee
+migrare follows semver:
+- Major versions for breaking changes
+- Minor versions for new features
+- Patch versions for bug fixes
 
-Plugin authors should target `@migrare/core@^0.2` (the first LTS release) to avoid
-churn while the `0.1` API settles.
+The current stable release is v0.1.0 (initial release with Lovable support).
 
 ---
 
@@ -464,4 +463,4 @@ Error messages follow the pattern: `[code] human-readable message (file:line if 
 ---
 
 *This file should be updated whenever new components are added or contracts change.*
-*Last updated: migrare v0.1 — March 2026*
+*Last updated: migrare v0.1.0 — April 2026*

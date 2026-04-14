@@ -38,7 +38,7 @@ import type {
   MigrareIssue,
 } from "../../core/types/index.js";
 import type { ProjectGraph } from "../../core/ProjectGraph.js";
-import type { AuthSession } from "../types/index.js";
+import type { AuthSession } from "../../auth/types/index.js";
 import type { ScanReport } from "../../core/types/index.js";
 
 export interface GitHubPROptions {

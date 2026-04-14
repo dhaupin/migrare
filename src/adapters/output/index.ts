@@ -115,9 +115,8 @@ export class LocalFSAdapter implements IOutputAdapter {
   readonly description = "Writes project files to a local directory (Node.js runtime)";
 
   async prepare(ctx: OutputContext): Promise<void> {
-    // In a real implementation:
-    // const { mkdir } = await import("fs/promises");
-    // await mkdir(ctx.targetPath, { recursive: true });
+    const { mkdir } = await import("fs/promises");
+    await mkdir(ctx.targetPath, { recursive: true });
     ctx.logger.info(`LocalFSAdapter: target directory ready`, { path: ctx.targetPath });
   }
 
@@ -132,18 +131,28 @@ export class LocalFSAdapter implements IOutputAdapter {
       return { written: [], skipped, errors, targetPath: ctx.targetPath };
     }
 
-    // In a real implementation:
-    // const { writeFile, mkdir } = await import("fs/promises");
-    // const path = await import("path");
-    // for (const file of graph.files.values()) {
-    //   const fullPath = path.join(ctx.targetPath, file.path);
-    //   await mkdir(path.dirname(fullPath), { recursive: true });
-    //   await writeFile(fullPath, file.content, file.encoding);
-    //   written.push(file.path);
-    // }
+    const { writeFile, mkdir } = await import("fs/promises");
+    const pathModule = await import("path");
 
     for (const file of graph.files.values()) {
-      written.push(file.path);
+      // Only write modified files or newly generated files
+      if (!file.modified && !file.meta.generatedBy) {
+        skipped.push(file.path);
+        continue;
+      }
+
+      try {
+        const fullPath = pathModule.join(ctx.targetPath, file.path);
+        await mkdir(pathModule.dirname(fullPath), { recursive: true });
+        await writeFile(fullPath, file.content, file.encoding);
+        written.push(file.path);
+      } catch (err) {
+        errors.push({
+          code: "FILE_WRITE_ERROR",
+          message: `Failed to write ${file.path}: ${err}`,
+          severity: "error",
+        });
+      }
     }
 
     return { written, skipped, errors, targetPath: ctx.targetPath };

@@ -36,6 +36,42 @@ export default {
         description: 'JSON API for AI agents and coding assistants. Call /api/scan to get a structured lock-in report. Stateless, no auth, returns immediately.',
       },
     },
+    {
+      path:       '/docs',
+      priority:   '0.8',
+      changefreq: 'weekly',
+      meta: {
+        title:       'Documentation — migrare',
+        description: 'How to use migrare: CLI commands, Supabase migration guide, FAQs, and quick start.',
+      },
+    },
+    {
+      path:       '/contact',
+      priority:   '0.5',
+      changefreq: 'monthly',
+      meta: {
+        title:       'Contact — migrare',
+        description: 'Get in touch with the migrare team.',
+      },
+    },
+    {
+      path:       '/terms',
+      priority:   '0.5',
+      changefreq: 'monthly',
+      meta: {
+        title:       'Terms of Service — migrare',
+        description: 'Terms of Service for using migrare.',
+      },
+    },
+    {
+      path:       '/privacy',
+      priority:   '0.5',
+      changefreq: 'monthly',
+      meta: {
+        title:       'Privacy Policy — migrare',
+        description: 'Privacy Policy for migrare.',
+      },
+    },
   ],
 
   buildJsonLd() {

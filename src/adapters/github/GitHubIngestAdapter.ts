@@ -25,7 +25,7 @@
 
 import { ProjectGraph } from "../../core/ProjectGraph.js";
 import type { ProjectFile, ProjectDependency } from "../../core/types/index.js";
-import type { AuthSession } from "../types/index.js";
+import type { AuthSession } from "../../auth/types/index.js";
 
 export interface GitHubRepoRef {
   owner: string;
