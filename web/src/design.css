@@ -125,11 +125,24 @@
   --r-full:    9999px;
   --glow:      0 0 14px var(--accent-glow), 0 0 40px rgba(0,230,118,0.07);
   --ease:      cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:  cubic-bezier(0, 0, 0.2, 1);
   --tf:        0.18s;
+  --ts:        0.16s;
+  --tb:        0.24s;
+
+  /* --- layout + component tokens --- */
+  --sidebar-w: 280px;
+  --w-content: 1040px;
+  --w-hero:    960px;
+  --w-narrow:  700px;
+  --tooltip-bg: var(--bg-2);
+  --tooltip-border: var(--border-hi);
+  --tooltip-delay: 100ms;
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 /* Light mode - only override colors (other tokens inherit from :root) */
-:root.light {
+[data-theme="light"] {
   --bg:           #f5f7f5;
   --bg-1:         #ebefeb;
   --bg-2:         #e1e6e1;
@@ -364,6 +377,9 @@ pre .num { color: var(--yellow); }
 .mw-hero    { max-width: var(--w-hero);    margin-inline: auto; width: 100%; }
 .mw-narrow  { max-width: var(--w-narrow);  margin-inline: auto; width: 100%; }
 
+.content-max { max-width: var(--w-content); margin-inline: auto; width: 100%; }
+.hero-max { max-width: var(--w-hero); margin-inline: auto; width: 100%; }
+
 .section {
   padding: var(--s8) var(--s4);
   border-top: 1px solid var(--border);
@@ -513,14 +529,9 @@ pre .num { color: var(--yellow); }
   color: var(--text);
 }
 
-/* Hide desktop nav elements on mobile */
+/* Mobile-first nav: menu button visible, link row hidden */
 .nav-links { display: none; }
-
-/* Hide hamburger on desktop (when nav-links is visible) */
-.nav-hamburger { display: none; }
-@media (max-width: 479px) {
-  .nav-hamburger { display: inline-flex; }
-}
+.nav-hamburger { display: inline-flex; }
 
 .nav-cta {
   color: var(--accent);
@@ -1281,8 +1292,16 @@ pre .num { color: var(--yellow); }
   .nav-label { display: inline; }
 }
 
+@media (max-width: 640px) {
+  .badge-status, .badge-status-footer { display: none; }
+}
+
 /* md: 768px — tablet, app layout gets sidebar */
 @media (min-width: 768px) {
+  .nav-links { display: flex; }
+  .nav-hamburger { display: none; }
+  .nav-menu { display: none; }
+
   .app-body {
     flex-direction: row;
     overflow: hidden;
@@ -1334,32 +1353,7 @@ pre .num { color: var(--yellow); }
   .logo-dot { animation: none; }
 }
 
-/* ─── scan output block — homepage ──────────────────────────────────────── */
-/* Not a macOS window. Looks like actual terminal output.                   */
-
-.scan-output {
-  font-family: var(--mono);
-  font-size: var(--t-sm);
-  border-left: 2px solid var(--accent-dim);
-  margin: 0 auto;
-}
-
-.scan-output-header {
-  padding: var(--s2) var(--s4);
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-1);
-}
-
-.scan-output-body {
-  padding: var(--s4) var(--s5);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: var(--bg-1);
-}
-
 /* ─── scan output block (homepage) ──────────────────────────────────────── */
-/* Raw CLI output feel — not a macOS window, not an AI chat box.            */
 
 .scan-output {
   border-left: 2px solid var(--accent-dim);
@@ -1367,6 +1361,7 @@ pre .num { color: var(--yellow); }
   margin-inline: auto;
   padding: 0;
   overflow: hidden;
+  max-width: 620px;
 }
 
 .scan-output-header {
@@ -1385,4 +1380,49 @@ pre .num { color: var(--yellow); }
   gap: 6px;
   font-size: var(--t-sm);
   line-height: 1.7;
+  background: var(--bg-1);
 }
+
+.term-glyph {
+  margin-right: var(--s3);
+  flex-shrink: 0;
+  min-width: 12px;
+}
+
+.home-delay-1 { animation-delay: 200ms; }
+.home-delay-2 { animation-delay: 290ms; }
+.home-delay-3 { animation-delay: 380ms; }
+.home-delay-4 { animation-delay: 470ms; }
+.home-delay-5 { animation-delay: 560ms; }
+
+.option-meta { font-size: var(--t-sm); color: var(--text); }
+.option-toggle { flex: 1; justify-content: center; }
+.option-toggle.is-active { border-color: var(--accent-dim); color: var(--accent); }
+.section-label-inline { margin-bottom: 0; flex: 1; }
+.row-rule { padding: var(--s3) 0; border-bottom: 1px solid var(--border); }
+.row-rule:last-child { border-bottom: none; }
+.row-label-sm { min-width: 36px; padding-top: 2px; }
+.row-label-md { min-width: 100px; padding-top: 2px; flex-shrink: 0; }
+.card-danger { border-color: rgba(255,82,82,0.25); }
+.card-title { font-family: var(--sans); font-weight: 500; }
+.badge-status { margin-right: var(--s2); }
+.badge-status-footer { margin-right: var(--s3); }
+.dropzone-icon { font-size: 22px; }
+.dropzone-icon-success { font-size: 20px; }
+.dropzone-file { font-size: var(--t-sm); }
+.dropzone-copy { font-size: var(--t-sm); }
+
+.signal-meta-row {
+  padding: var(--s2) var(--s4);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+}
+
+.signal-list {
+  padding: var(--s2) var(--s4);
+  display: flex;
+  flex-direction: column;
+}
+
+.option-panel { flex: 1; }
+.m-0 { margin: 0; }

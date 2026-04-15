@@ -1,51 +1,33 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import GithubIcon, { MenuIcon, CloseIcon, SunIcon, MoonIcon } from "./GithubIcon";
+import useTheme from "../hooks/useTheme";
 
 const API = "";
 
 export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState(null);
   const [serverOk, setServerOk] = useState(null);
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   useEffect(() => {
-    // Default to light mode, respect system preference and stored choice
-    const stored = localStorage.getItem("theme");
-    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-    const initial = stored || (prefersLight ? "light" : "dark");
-    setTheme(initial);
-    document.documentElement.classList.toggle("light", initial === "light");
-  }, []);
-
-  useEffect(() => {
     fetch(`${API}/api/health`)
-      .then(r => r.json())
-      .then(d => setServerOk(d.ok === true))
+      .then((r) => r.json())
+      .then((d) => setServerOk(d.ok === true))
       .catch(() => setServerOk(false));
   }, []);
 
-  // Auto-refresh every 30s
   useEffect(() => {
     const interval = setInterval(() => {
       fetch(`${API}/api/health`)
-        .then(r => r.json())
-        .then(d => setServerOk(d.ok === true))
+        .then((r) => r.json())
+        .then((d) => setServerOk(d.ok === true))
         .catch(() => setServerOk(false));
     }, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const toggleTheme = () => {
-    if (!theme) return;
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    localStorage.setItem("theme", next);
-    document.documentElement.classList.toggle("light", next === "light");
-  };
-
-  // Close menu on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
@@ -63,57 +45,46 @@ export default function Nav() {
         <span className="logo-dot" />
         migrare
       </Link>
-      
-      {/* Desktop nav links - visible on larger screens */}
+
       <div className="nav-links">
         {navItems.map((item) => (
-          <Link
-            key={item.href}
-            to={item.href}
-            className="nav-link"
-          >
+          <Link key={item.href} to={item.href} className="nav-link">
             {item.label}
           </Link>
         ))}
       </div>
 
       <div className="nav-right">
-        {/* API status indicator */}
         {serverOk !== null && (
-          <span className="badge flex gap-2 items-center" style={{ marginRight: 8 }}>
+          <span className="badge badge-status">
             <span className={`status-dot ${serverOk ? "dot-online" : "dot-offline"}`} />
             <span className="t-dim t-xs">{serverOk ? "api online" : "api offline"}</span>
           </span>
         )}
 
-        {/* Theme toggle */}
         <button
           className="nav-icon"
           onClick={toggleTheme}
           aria-label="Toggle theme"
           id="theme-toggle"
+          type="button"
         >
           {theme === "light" ? <MoonIcon /> : <SunIcon />}
         </button>
 
-        {/* Hamburger menu */}
         <button
           className="nav-icon nav-hamburger"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Toggle menu"
+          type="button"
         >
           {menuOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
       </div>
 
-      {/* Mobile menu dropdown */}
       <div className={`nav-menu ${menuOpen ? "open" : ""}`}>
         {navItems.map((item) => (
-          <Link
-            key={item.href}
-            to={item.href}
-            className="nav-menu-item"
-          >
+          <Link key={item.href} to={item.href} className="nav-menu-item">
             {item.label}
           </Link>
         ))}

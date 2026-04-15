@@ -105,10 +105,7 @@ export default function ForAI() {
           {agentPatterns.map((p) => (
             <div
               key={p.title}
-              className="card"
-              style={{
-                borderColor: p.safe ? "var(--border)" : "rgba(255,82,82,0.25)",
-              }}
+              className={`card ${p.safe ? "" : "card-danger"}`}
             >
               <div className="card-header">
                 <span
@@ -116,18 +113,18 @@ export default function ForAI() {
                 >
                   {p.safe ? "✓ safe" : "✗ avoid"}
                 </span>
-                <span className="t-white t-md" style={{ fontFamily: "var(--sans)", fontWeight: 500 }}>
+                <span className="t-white t-md card-title">
                   {p.title}
                 </span>
               </div>
               <div className="card-body flex flex-col gap-2">
                 <div className="flex gap-2 items-start">
-                  <span className="t-muted t-xs t-upper t-track" style={{ minWidth: "36px", paddingTop: "2px" }}>when</span>
-                  <span className="help-text" style={{ margin: 0 }}>{p.when}</span>
+                  <span className="t-muted t-xs t-upper t-track row-label-sm">when</span>
+                  <span className="help-text m-0">{p.when}</span>
                 </div>
                 <div className="flex gap-2 items-start">
-                  <span className="t-muted t-xs t-upper t-track" style={{ minWidth: "36px", paddingTop: "2px" }}>how</span>
-                  <span className="help-text" style={{ margin: 0 }}>{p.how}</span>
+                  <span className="t-muted t-xs t-upper t-track row-label-sm">how</span>
+                  <span className="help-text m-0">{p.how}</span>
                 </div>
               </div>
             </div>
@@ -293,11 +290,11 @@ for (const file of result.files) {
             ["Transforms are surgical", "The engine only touches files it has explicit transforms for. It does not rewrite your whole app. Unknown patterns are flagged as signals, not auto-fixed."],
             ["Migrate ≠ commit", "The files array is a suggested diff. migrare has no access to your repo, no git integration, and no ability to commit anything. That step is always yours."],
           ].map(([title, desc]) => (
-            <div key={title} className="flex gap-3 items-start" style={{ padding: "var(--sp-3) 0", borderBottom: "1px solid var(--border)" }}>
-              <span className="t-green t-xs t-upper t-track" style={{ minWidth: "100px", paddingTop: "2px", flexShrink: 0 }}>
+            <div key={title} className="flex gap-3 items-start row-rule">
+              <span className="t-green t-xs t-upper t-track row-label-md">
                 {title}
               </span>
-              <span className="help-text" style={{ margin: 0 }}>{desc}</span>
+              <span className="help-text m-0">{desc}</span>
             </div>
           ))}
         </div>
