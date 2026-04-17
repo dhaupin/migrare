@@ -28,30 +28,7 @@ export default function Footer() {
 
   return (
     <footer className="footer">
-      <div className="footer-col footer-col-left">
-        <img src={LOGO} alt="migrare" className="footer-logo-img" />
-        <span className="footer-sep">·</span>
-        <span className="t-dim t-xs">© {year} Migrare</span>
-        <span className="footer-sep">·</span>
-        <a
-          href="https://github.com/dhaupin/migrare/blob/main/LICENSE"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="footer-link"
-        >
-          MIT
-        </a>
-      </div>
-
-      <div className="footer-col footer-col-right">
-        {/* API status indicator */}
-        {serverOk !== null && (
-          <span className="badge badge-status-footer flex gap-2 items-center">
-            <span className={`status-dot ${serverOk ? "dot-online" : "dot-offline"}`} />
-            <span className="t-dim t-xs">{serverOk ? "api" : "offline"}</span>
-          </span>
-        )}
-
+      <div className="footer-col">
         <Link to="/app" className="footer-link">Migrate</Link>
         <span className="footer-sep footer-sep-nav">·</span>
         <Link to="/docs" className="footer-link">Docs</Link>
@@ -72,6 +49,29 @@ export default function Footer() {
         >
           <GithubIcon />
         </a>
+      </div>
+
+      <div className="footer-col footer-col-right">
+        <img src={LOGO} alt="migrare" className="footer-logo-img" />
+        <span className="footer-sep">·</span>
+        <span className="t-dim t-xs">© {year} Migrare</span>
+        <span className="footer-sep">·</span>
+        <a
+          href="https://github.com/dhaupin/migrare/blob/main/LICENSE"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="footer-link"
+        >
+          MIT
+        </a>
+
+        {/* API status indicator */}
+        {serverOk !== null && (
+          <span className="badge badge-status-footer flex gap-2 items-center">
+            <span className={`status-dot ${serverOk ? "dot-online" : "dot-offline"}`} />
+            <span className="t-dim t-xs">{serverOk ? "api" : "offline"}</span>
+          </span>
+        )}
       </div>
     </footer>
   );

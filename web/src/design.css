@@ -465,9 +465,11 @@ pre .num { color: var(--yellow); }
   color: var(--text);
   transition: color var(--tf) var(--ease);
   padding: 4px;
-  border-radius: var(--r);
+  border: none;
+  background: transparent;
 }
 .nav-icon:hover { color: var(--accent); text-decoration: none; }
+.nav-icon:focus-visible { outline: 1px solid var(--border-focus); outline-offset: 2px; }
 .nav-icon .icon { font-size: 1em; width: 1em; height: 1em; }
 .nav-icon svg,
 .nav-icon svg.lucide { width: 1.1em; height: 1.1em; stroke-width: 1.5; }
@@ -550,9 +552,9 @@ pre .num { color: var(--yellow); }
   padding: 5px 12px;
   border: 1px solid var(--accent-dim);
   border-radius: var(--r);
-  transition: background var(--tf) var(--ease), color var(--tf) var(--ease);
+  transition: background var(--tf) var(--ease), color var(--tf) var(--ease), border-color var(--tf) var(--ease);
 }
-.nav-cta:hover { background: var(--accent); color: var(--text-inv); text-decoration: none; }
+.nav-cta:hover { background: var(--accent); color: var(--text-inv); border-color: var(--accent); text-decoration: none; }
 
 /* hide nav text labels on small screens */
 .nav-label { display: none; }
@@ -1197,6 +1199,10 @@ pre .num { color: var(--yellow); }
 .page-text { font-size: var(--t-md); color: var(--text-dim); line-height: 1.7; margin-bottom: var(--s3); }
 .page-text a { color: var(--accent); text-decoration: none; }
 .page-text a:hover { text-decoration: underline; }
+
+.page-list { margin: var(--s3) 0 var(--s4) var(--s4); list-style: disc; }
+.page-list li { font-size: var(--t-md); color: var(--text-dim); line-height: 1.7; margin-bottom: var(--s2); }
+.page-list li::marker { color: var(--accent-dim); }
 
 /* footer */
 .footer {
