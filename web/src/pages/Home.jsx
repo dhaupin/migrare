@@ -36,9 +36,9 @@ const features = [
 
 const scanLines = [
   { glyph: "✓", cls: "t-green",  text: ["t-dim:platform detected: ", "t-white:lovable", "t-dim: (confidence: high)"] },
-  { glyph: "⚠", cls: "t-yellow", text: ["t-dim:lovable-tagger in ", "t-cyan:vite.config.ts", "t-dim: — queued for removal"] },
+  { glyph: "⚠", cls: "t-yellow", text: ["t-dim:lovable-tagger in ", "t-cyan:vite.config.ts", "t-dim: - queued for removal"] },
   { glyph: "✗", cls: "t-red",    text: ["t-dim:hardcoded URL in ", "t-cyan:src/integrations/supabase/client.ts"] },
-  { glyph: "⚠", cls: "t-yellow", text: ["t-cyan:.env", "t-dim: — GPT_ENGINEER_* found, will rename"] },
+  { glyph: "⚠", cls: "t-yellow", text: ["t-cyan:.env", "t-dim: - GPT_ENGINEER_* found, will rename"] },
   { glyph: "▸", cls: "t-green",  text: ["t-dim:3 transforms ready · complexity: ", "t-white:moderate"] },
 ];
 
@@ -83,7 +83,7 @@ export default function Home() {
           </a>
         </div>
 
-        {/* Scan output block — not a macOS window */}
+        {/* Scan output block - not a macOS window */}
         <div className="scan-output">
           <div className="scan-output-header">
             <span className="t-muted t-xs">$ migrare scan my-app.zip</span>
@@ -131,7 +131,7 @@ export default function Home() {
         <p className="section-label">how it works</p>
         <div className="steps">
           {[
-            ["01", "Export your project", "Download a ZIP from Lovable — or clone from GitHub and zip the repo. No special access needed."],
+            ["01", "Export your project", "Download a ZIP from Lovable - or clone from GitHub and zip the repo. No special access needed."],
             ["02", "Drop it in the tool", "Upload at migrare.creadev.org/app. The scanner runs on Cloudflare's edge. Nothing is persisted."],
             ["03", "Read the scan report", "Every lock-in signal is listed by file, line, severity, and suggested fix. Review before committing to anything."],
             ["04", "Migrate and download", "Apply transforms in one click. Download a zip of only the changed files. Auditable, reversible, yours."],

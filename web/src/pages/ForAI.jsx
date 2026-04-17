@@ -57,7 +57,7 @@ const agentPatterns = [
   {
     title: "Pre-edit context",
     when: "Before touching any files in a Lovable repo.",
-    how: "Call /api/scan with the project zip. Feed the signal list into your context. You now know exactly which files have lock-in, what kind, and where — before writing a single line.",
+    how: "Call /api/scan with the project zip. Feed the signal list into your context. You now know exactly which files have lock-in, what kind, and where - before writing a single line.",
     safe: true,
   },
   {
@@ -138,7 +138,7 @@ export default function ForAI() {
         <div className="help-block">
           <p className="help-text">
             Send a base64-encoded zip. Get back a structured scan report.
-            Read-only — nothing is stored, no side effects.
+            Read-only - nothing is stored, no side effects.
           </p>
         </div>
 
@@ -200,7 +200,7 @@ for (const signal of report.signals) {
     zip:  string,   // base64-encoded .zip bytes
     name: string
   },
-  dryRun?:       boolean,  // default false — true returns log without file content
+  dryRun?:       boolean,  // default false - true returns log without file content
   targetAdapter?: "vite" | "nextjs"
 }`}</code></pre>
           </div>
@@ -212,20 +212,20 @@ for (const signal of report.signals) {
 
           <div className="code-block">
             <p className="code-block-label">recommended agent pattern</p>
-            <pre><code>{`// 1. scan first — understand what you're dealing with
+            <pre><code>{`// 1. scan first - understand what you're dealing with
 const scan = await callScan(zip);
 if (scan.summary.migrationComplexity === "requires-manual") {
   // surface to human before proceeding
 }
 
-// 2. dry run — confirm transforms match expectations
+// 2. dry run - confirm transforms match expectations
 const dry = await callMigrate(zip, { dryRun: true });
 // show transformLog to human or include in context
 
-// 3. apply — get file diffs
+// 3. apply - get file diffs
 const result = await callMigrate(zip, { dryRun: false });
 
-// 4. write via your own tools — don't blind-apply
+// 4. write via your own tools - don't blind-apply
 for (const file of result.files) {
   // review diff, then write
   await myFileTools.write(file.path, file.content);
@@ -259,7 +259,7 @@ for (const file of result.files) {
         <div className="help-block">
           <p className="help-text">
             <a href="/llms.txt" target="_blank" rel="noopener noreferrer">/llms.txt</a>{" "}
-            is a plain-text summary of what migrare is and how to use its API —
+            is a plain-text summary of what migrare is and how to use its API -
             following the emerging{" "}
             <a
               href="https://llmstxt.org"
@@ -285,7 +285,7 @@ for (const file of result.files) {
         <div className="flex flex-col gap-3">
           {[
             ["Zip size", "The edge function handles typical Lovable exports (< 5 MB unzipped) comfortably. Very large monorepos may hit Workers CPU limits. Run the CLI locally for those."],
-            ["Stateless", "Nothing is persisted between calls. Every request is independent. There is no session, no job ID, no polling — scan and migrate are synchronous and return immediately."],
+            ["Stateless", "Nothing is persisted between calls. Every request is independent. There is no session, no job ID, no polling - scan and migrate are synchronous and return immediately."],
             ["No auth", "The API is open. Rate limiting is handled by Cloudflare at the edge. If you're calling this in a tight loop from automation, add a pause between requests."],
             ["Transforms are surgical", "The engine only touches files it has explicit transforms for. It does not rewrite your whole app. Unknown patterns are flagged as signals, not auto-fixed."],
             ["Migrate ≠ commit", "The files array is a suggested diff. migrare has no access to your repo, no git integration, and no ability to commit anything. That step is always yours."],

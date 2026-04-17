@@ -7,11 +7,11 @@ import GithubIcon from "../components/GithubIcon";
 const faqs = [
   {
     q: "What does migrare actually do?",
-    a: "migrare scans your exported Lovable project for vendor lock-in patterns — proprietary build tooling, hardcoded credentials, platform-specific env vars, and auth coupling. It then applies surgical transforms to remove or fix these issues, giving you a clean, portable codebase you can self-host.",
+    a: "migrare scans your exported Lovable project for vendor lock-in patterns - proprietary build tooling, hardcoded credentials, platform-specific env vars, and auth coupling. It then applies surgical transforms to remove or fix these issues, giving you a clean, portable codebase you can self-host.",
   },
   {
     q: "Is my code safe?",
-    a: "Yes. migrare never touches your original repo. The web tool processes everything in memory on Cloudflare's edge — nothing is stored, logged, or persisted. For extra privacy, run the CLI locally where your code never leaves your machine.",
+    a: "Yes. migrare never touches your original repo. The web tool processes everything in memory on Cloudflare's edge - nothing is stored, logged, or persisted. For extra privacy, run the CLI locally where your code never leaves your machine.",
   },
   {
     q: "What platforms are supported?",
@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     q: "What if the scan finds errors?",
-    a: "The scan report lists every lock-in signal by file, line, severity, and suggested fix. Review the report before migrating. Some issues require manual review — migrare will tell you when a transform can't be automated.",
+    a: "The scan report lists every lock-in signal by file, line, severity, and suggested fix. Review the report before migrating. Some issues require manual review - migrare will tell you when a transform can't be automated.",
   },
   {
     q: "How do I finish the migration with Supabase?",
@@ -95,7 +95,7 @@ export default function Docs() {
           Documentation
         </h1>
         <p className="hero-sub">
-          Everything you need to know about using migrare — from the web tool to the CLI
+          Everything you need to know about using migrare - from the web tool to the CLI
           to finishing your Supabase migration.
         </p>
       </section>
@@ -127,7 +127,7 @@ export default function Docs() {
         <p className="section-label">CLI commands</p>
         <div className="help-block">
           <p className="help-text">
-            Install once, run anywhere. The CLI processes everything locally — your code never leaves your machine.
+            Install once, run anywhere. The CLI processes everything locally - your code never leaves your machine.
           </p>
         </div>
 
@@ -180,7 +180,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 VITE_API_DOMAIN=https://api.yourdomain.com`}</code></pre>
         </div>
         <p className="t-dim t-xs" style={{ marginTop: "var(--s-3)" }}>
-          Make sure .env is in your .gitignore — never commit credentials.
+          Make sure .env is in your .gitignore - never commit credentials.
         </p>
       </section>
 

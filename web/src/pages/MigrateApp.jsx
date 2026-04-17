@@ -115,7 +115,7 @@ function ScanReport({ report }) {
         {report.signals?.length === 0 && (
           <div className="log-line">
             <span className="log-glyph t-green">✓</span>
-            <span className="log-text">No lock-in signals found — project looks portable</span>
+            <span className="log-text">No lock-in signals found - project looks portable</span>
           </div>
         )}
         {(report.signals ?? []).map(sig => (
@@ -150,7 +150,7 @@ function MigrationResult({ result, onDownload }) {
               <span className="log-glyph t-green">▸</span>
               <span className="log-text">
                 <span className="t-cyan">{entry.transform}</span>
-                {" — "}
+                {" - "}
                 <span className="t-dim">{entry.file}</span>
                 {" "}
                 <span className="t-muted">({entry.action})</span>
@@ -171,7 +171,7 @@ function MigrationResult({ result, onDownload }) {
           <div className="log-line">
             <span className="log-glyph t-yellow">◈</span>
             <span className="log-text">
-              Preview only — transforms were computed but no files produced.
+              Preview only - transforms were computed but no files produced.
               Use "migrate" to get the downloadable output.
             </span>
           </div>
@@ -243,7 +243,7 @@ export default function MigrateApp() {
       setProgress({ msg: "Done", pct: 100 });
       await sleep(200);
       setScanReport(report);
-      addLog("ok", `Scan complete — ${report.signals?.length ?? 0} signals, complexity: ${report.summary?.migrationComplexity}`);
+      addLog("ok", `Scan complete - ${report.signals?.length ?? 0} signals, complexity: ${report.summary?.migrationComplexity}`);
     } catch (err) {
       addLog("error", "Scan failed: " + err.message);
     } finally {
@@ -271,8 +271,8 @@ export default function MigrateApp() {
       await sleep(200);
       setMigResult(result);
       addLog("ok", dryRun
-        ? `Preview complete — ${result.transformLog?.length ?? 0} transforms would apply`
-        : `Migration complete — ${result.files?.length ?? 0} files changed`);
+        ? `Preview complete - ${result.transformLog?.length ?? 0} transforms would apply`
+        : `Migration complete - ${result.files?.length ?? 0} files changed`);
     } catch (err) {
       addLog("error", "Migration failed: " + err.message);
     } finally {
@@ -391,7 +391,7 @@ export default function MigrateApp() {
               <Tip
                 text={
                   migMode === "preview"
-                    ? "Preview runs all transforms internally and shows what would change — but produces no downloadable output."
+                    ? "Preview runs all transforms internally and shows what would change - but produces no downloadable output."
                     : "Applies all transforms and produces a downloadable ZIP of only the changed files."
                 }
                 
@@ -446,7 +446,7 @@ export default function MigrateApp() {
               what lock-in exists before deciding whether to migrate.
             </p>
             <p className="help-text">
-              <strong>Preview</strong> runs transforms internally and shows the change log —
+              <strong>Preview</strong> runs transforms internally and shows the change log -
               no output is produced. Use it to verify the plan before committing.
             </p>
             <p className="help-text">

@@ -14,7 +14,7 @@ export default function Contact() {
             out of a locked-in platform? We'd love to hear from you.
           </p>
           <p className="page-text">
-            Creadev can also handle the migration for you — from export to clean, portable code. 
+            Creadev.org can also handle the migration for you - from export to clean, portable code. 
             We specialize in extracting projects from Lovable, Bolt.new, and similar platforms, 
             then rebuilding them with proper architecture on your own infrastructure.
           </p>
@@ -36,9 +36,6 @@ export default function Contact() {
           </p>
           <p className="page-text t-dim">
             // no forms. no bots. just humans.
-          </p>
-          <p className="page-text t-dim">
-            We typically respond within 24-48 hours.
           </p>
         </div>
       </main>
