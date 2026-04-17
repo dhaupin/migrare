@@ -4,7 +4,7 @@ import EmailLinkIsland from "../components/EmailLinkIsland";
 
 export default function Terms() {
   return (
-    <div className="content-page">
+    <div className="page">
       <Nav />
       <main className="content-page">
         <div className="page-container">
