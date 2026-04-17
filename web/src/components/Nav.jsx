@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import GithubIcon, { MenuIcon, CloseIcon, SunIcon, MoonIcon } from "./GithubIcon";
-import useTheme from "../hooks/useTheme";
+import GithubIcon, { MenuIcon, CloseIcon } from "./GithubIcon";
+import ThemeToggleIsland from "./ThemeToggleIsland";
 
 const API = "";
 
 export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [serverOk, setServerOk] = useState(null);
-  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   useEffect(() => {
@@ -62,15 +61,7 @@ export default function Nav() {
           </span>
         )}
 
-        <button
-          className="nav-icon"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-          id="theme-toggle"
-          type="button"
-        >
-          {theme === "light" ? <MoonIcon /> : <SunIcon />}
-        </button>
+        <ThemeToggleIsland />
 
         <button
           className="nav-icon nav-hamburger"
