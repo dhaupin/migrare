@@ -31,7 +31,7 @@ export default function Footer() {
       <div className="footer-col footer-col-left">
         <img src={LOGO} alt="migrare" className="footer-logo-img" />
         <span className="footer-sep">·</span>
-        <span className="t-dim t-xs">© {year} Creadev</span>
+        <span className="t-dim t-xs">© {year} Migrare</span>
         <span className="footer-sep">·</span>
         <a
           href="https://github.com/dhaupin/migrare/blob/main/LICENSE"
@@ -53,11 +53,17 @@ export default function Footer() {
         )}
 
         <Link to="/app" className="footer-link">Migrate</Link>
+        <span className="footer-sep footer-sep-nav">·</span>
         <Link to="/docs" className="footer-link">Docs</Link>
+        <span className="footer-sep footer-sep-nav">·</span>
         <Link to="/for-ai" className="footer-link">For AI</Link>
+        <span className="footer-sep footer-sep-nav">·</span>
         <Link to="/contact" className="footer-link">Contact</Link>
+        <span className="footer-sep footer-sep-nav">·</span>
         <Link to="/terms" className="footer-link">Terms</Link>
+        <span className="footer-sep footer-sep-nav">·</span>
         <Link to="/privacy" className="footer-link">Privacy</Link>
+        <span className="footer-sep footer-sep-nav">·</span>
         <a
           href="https://github.com/dhaupin/migrare"
           target="_blank"
