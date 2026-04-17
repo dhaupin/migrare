@@ -23,12 +23,23 @@
     <meta name="twitter:card" content="summary" />
     <script>
       (() => {
+        const THEME_KEY = "theme";
+        const LIGHT = "light";
+        const DARK = "dark";
+
         try {
-          const stored = localStorage.getItem("theme");
-          const theme = stored || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-          document.documentElement.setAttribute("data-theme", theme);
+          const stored = localStorage.getItem(THEME_KEY);
+          const hasManualTheme = stored === LIGHT || stored === DARK;
+          const systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches ? LIGHT : DARK;
+          const resolvedTheme = hasManualTheme ? stored : systemTheme;
+
+          document.documentElement.setAttribute("data-theme", resolvedTheme);
+          document.documentElement.setAttribute("data-theme-source", hasManualTheme ? "manual" : "system");
+          document.documentElement.style.colorScheme = resolvedTheme;
         } catch (_) {
-          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.setAttribute("data-theme", DARK);
+          document.documentElement.setAttribute("data-theme-source", "fallback");
+          document.documentElement.style.colorScheme = DARK;
         }
       })();
     </script>
