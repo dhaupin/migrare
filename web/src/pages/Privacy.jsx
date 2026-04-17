@@ -1,5 +1,6 @@
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
+import EmailLinkIsland from "../components/EmailLinkIsland";
 
 export default function Privacy() {
   return (
@@ -74,8 +75,7 @@ export default function Privacy() {
 
           <h2 className="page-heading">10. Contact</h2>
           <p className="page-text">
-            For privacy questions, contact{" "}
-            <a href="mailto:hello@creadev.org">hello@creadev.org</a>.
+            For privacy questions, contact <EmailLinkIsland />.
           </p>
 
           <p className="page-text t-dim">Last updated: April 17, 2026</p>

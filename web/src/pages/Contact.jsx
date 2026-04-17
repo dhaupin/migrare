@@ -1,15 +1,8 @@
-import { useState, useEffect } from "react";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
+import EmailLinkIsland from "../components/EmailLinkIsland";
 
 export default function Contact() {
-  const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    // Obfuscated email - loaded via JS to avoid scraping
-    setEmail("hello@creadev.org");
-  }, []);
-
   return (
     <div className="content-page">
       <Nav />
@@ -20,7 +13,7 @@ export default function Contact() {
             Have questions about migrare? We'd love to hear from you.
           </p>
           <p className="page-text">
-            {email && <a href={`mailto:${email}`}>{email}</a>}
+            <EmailLinkIsland />
           </p>
           <p className="page-text t-dim">
             We typically respond within 24-48 hours.

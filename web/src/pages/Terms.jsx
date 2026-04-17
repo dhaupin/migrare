@@ -1,5 +1,6 @@
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
+import EmailLinkIsland from "../components/EmailLinkIsland";
 
 export default function Terms() {
   return (
@@ -69,7 +70,7 @@ export default function Terms() {
           <h2 className="page-heading">9. Contact</h2>
           <p className="page-text">
             For legal or support questions about these Terms, contact us at{" "}
-            <a href="mailto:hello@creadev.org">hello@creadev.org</a>.
+            <EmailLinkIsland />.
           </p>
 
           <p className="page-text t-dim">Last updated: April 17, 2026</p>
