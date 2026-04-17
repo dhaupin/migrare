@@ -11,7 +11,7 @@ export default function Contact() {
   }, []);
 
   return (
-    <div className="page">
+    <div className="content-page">
       <Nav />
       <div className="page-container">
         <h1 className="page-title">Contact</h1>
