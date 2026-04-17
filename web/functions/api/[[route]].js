@@ -155,7 +155,17 @@ async function parseZip(base64Data) {
     const extraLen    = view.getUint16(offset + 28, true);
     const headerEnd   = offset + 30 + fnameLen + extraLen;
 
+    // Bounds check: verify we have enough bytes for this entry header
+    if (headerEnd + compSize > bytes.length) {
+      break; // malformed zip, stop processing
+    }
+
     const fname = new TextDecoder().decode(bytes.slice(offset + 30, offset + 30 + fnameLen));
+    // Reject path traversal attempts
+    if (fname.includes("..") || fname.startsWith("/")) {
+      offset = headerEnd + compSize;
+      continue;
+    }
     const normalizedPath = fname.replace(/^[^/]+\//, "");
 
     const isBinary = /\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot|mp4|mp3|pdf|zip)$/i.test(fname);
