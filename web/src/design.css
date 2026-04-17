@@ -1229,6 +1229,7 @@ pre .num { color: var(--yellow); }
 @media (max-width: 640px) {
   .footer { flex-direction: column; align-items: flex-start; padding: var(--s4); }
   .footer-col-right { justify-content: flex-start; }
+  .badge-status-footer { display: flex; align-items: center; gap: var(--s1); margin-top: var(--s2); }
 }
 
 /* ─── 18. ANIMATIONS ─────────────────────────────────────────────────────── */
@@ -1306,10 +1307,6 @@ pre .num { color: var(--yellow); }
   .section { padding: var(--s10) var(--s6); }
   .footer { padding: var(--s4) var(--s6); }
   .nav-label { display: inline; }
-}
-
-@media (max-width: 640px) {
-  .badge-status, .badge-status-footer { display: none; }
 }
 
 /* md: 768px — tablet, app layout gets sidebar */
