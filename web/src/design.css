@@ -531,16 +531,6 @@ pre .num { color: var(--yellow); }
   color: var(--text);
 }
 
-.nav-menu-status {
-  padding: var(--s2) var(--s4) var(--s1);
-}
-
-.badge-status-mobile {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s2);
-}
-
 /* Mobile-first nav: menu button visible, link row hidden */
 .nav-links { display: none; }
 .nav-hamburger { display: inline-flex; }

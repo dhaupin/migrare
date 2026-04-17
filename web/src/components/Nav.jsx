@@ -74,14 +74,6 @@ export default function Nav() {
       </div>
 
       <div className={`nav-menu ${menuOpen ? "open" : ""}`}>
-        {serverOk !== null && (
-          <div className="nav-menu-status">
-            <span className="badge badge-status-mobile">
-              <span className={`status-dot ${serverOk ? "dot-online" : "dot-offline"}`} />
-              <span className="t-dim t-xs">{serverOk ? "api online" : "api offline"}</span>
-            </span>
-          </div>
-        )}
         {navItems.map((item) => (
           <Link key={item.href} to={item.href} className="nav-menu-item">
             {item.label}
