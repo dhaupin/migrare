@@ -3,7 +3,7 @@ import Footer from "../components/Footer";
 
 export default function Privacy() {
   return (
-    <div className="page">
+    <div className="content-page">
       <Nav />
       <div className="page-container">
         <h1 className="page-title">Privacy Policy</h1>
