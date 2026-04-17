@@ -4,7 +4,7 @@ import EmailLinkIsland from "../components/EmailLinkIsland";
 
 export default function Contact() {
   return (
-    <div className="page">
+    <div className="content-page">
       <Nav />
       <main className="content-page">
         <div className="page-container">
