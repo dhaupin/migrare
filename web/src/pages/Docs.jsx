@@ -6,12 +6,12 @@ import GithubIcon from "../components/GithubIcon";
 
 const faqs = [
   {
-    q: "What does migrare actually do?",
-    a: "migrare scans your exported Lovable project for vendor lock-in patterns - proprietary build tooling, hardcoded credentials, platform-specific env vars, and auth coupling. It then applies surgical transforms to remove or fix these issues, giving you a clean, portable codebase you can self-host.",
+    q: "What does Migrare actually do?",
+    a: "Migrare scans your exported Lovable project for vendor lock-in patterns - proprietary build tooling, hardcoded credentials, platform-specific env vars, and auth coupling. It then applies surgical transforms to remove or fix these issues, giving you a clean, portable codebase you can self-host.",
   },
   {
     q: "Is my code safe?",
-    a: "Yes. migrare never touches your original repo. The web tool processes everything in memory on Cloudflare's edge - nothing is stored, logged, or persisted. For extra privacy, run the CLI locally where your code never leaves your machine.",
+    a: "Yes. Migrare never touches your original repo. The web tool processes everything in memory on Cloudflare's edge - nothing is stored, logged, or persisted. For extra privacy, run the CLI locally where your code never leaves your machine.",
   },
   {
     q: "What platforms are supported?",
@@ -19,15 +19,15 @@ const faqs = [
   },
   {
     q: "Do I need an account?",
-    a: "No. migrare is MIT-licensed open source. No auth, no signup, no data collection. Run it locally via CLI or use the hosted tool anonymously.",
+    a: "No. Migrare is MIT-licensed open source. No auth, no signup, no data collection. Run it locally via CLI or use the hosted tool anonymously.",
   },
   {
     q: "What if the scan finds errors?",
-    a: "The scan report lists every lock-in signal by file, line, severity, and suggested fix. Review the report before migrating. Some issues require manual review - migrare will tell you when a transform can't be automated.",
+    a: "The scan report lists every lock-in signal by file, line, severity, and suggested fix. Review the report before migrating. Some issues require manual review - Migrare will tell you when a transform can't be automated.",
   },
   {
     q: "How do I finish the migration with Supabase?",
-    a: "After running migrare, your Supabase credentials are moved to environment variables. Create a .env file in your new project with your Supabase URL and anon key from your Lovable project's Supabase dashboard. The migrated code reads from VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+    a: "After running Migrare, your Supabase credentials are moved to environment variables. Create a .env file in your new project with your Supabase URL and anon key from your Lovable project's Supabase dashboard. The migrated code reads from VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
   },
 ];
 
@@ -89,13 +89,13 @@ export default function Docs() {
         <div className="hero-eyebrow">
           <span className="badge">docs</span>
           <span className="t-muted">·</span>
-          <span className="t-dim t-xs">how to use migrare</span>
+          <span className="t-dim t-xs">How to use Migrare</span>
         </div>
         <h1 className="hero-h1">
           Documentation
         </h1>
         <p className="hero-sub">
-          Everything you need to know about using migrare - from the web tool to the CLI
+          Everything you need to know about using Migrare - from the web tool to the CLI
           to finishing your Supabase migration.
         </p>
       </section>
@@ -146,7 +146,7 @@ export default function Docs() {
         <p className="section-label">finishing migration with supabase</p>
         <div className="help-block">
           <p className="help-text">
-            migrare moves your hardcoded Supabase credentials to environment variables.
+            Migrare moves your hardcoded Supabase credentials to environment variables.
             Here's how to complete the setup in your new project.
           </p>
         </div>

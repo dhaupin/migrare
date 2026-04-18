@@ -64,7 +64,7 @@ export default function Home() {
         </h1>
 
         <p className="hero-sub">
-          migrare detects vendor lock-in in Lovable, Bolt, and Replit exports,
+          Migrare detects vendor lock-in in Lovable, Bolt, and Replit exports,
           then applies surgical transforms so you walk away with a clean, portable,
           self-hosted codebase. No black boxes. No subscriptions. Just your files.
         </p>

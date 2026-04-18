@@ -52,7 +52,7 @@ export default function Footer() {
       </div>
 
       <div className="footer-col footer-col-right">
-        <img src={LOGO} alt="migrare" className="footer-logo-img" />
+        <img src={LOGO} alt="Migrare" className="footer-logo-img" />
         <span className="footer-sep">·</span>
         <span className="t-dim t-xs">© {year} Migrare</span>
         <span className="footer-sep">·</span>

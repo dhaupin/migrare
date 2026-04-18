@@ -89,7 +89,7 @@ export default function ForAI() {
           <span className="t-dim t-xs">JSON API · no auth · stateless</span>
         </div>
         <h1 className="hero-h1">
-          migrare for AI agents
+          Migrare for AI agents
         </h1>
         <p className="hero-sub">
           The migration API is plain JSON over HTTP. No SDK, no auth, no session.
@@ -259,7 +259,7 @@ for (const file of result.files) {
         <div className="help-block">
           <p className="help-text">
             <a href="/llms.txt" target="_blank" rel="noopener noreferrer">/llms.txt</a>{" "}
-            is a plain-text summary of what migrare is and how to use its API -
+            is a plain-text summary of Migrare is and how to use its API -
             following the emerging{" "}
             <a
               href="https://llmstxt.org"
@@ -288,7 +288,7 @@ for (const file of result.files) {
             ["Stateless", "Nothing is persisted between calls. Every request is independent. There is no session, no job ID, no polling - scan and migrate are synchronous and return immediately."],
             ["No auth", "The API is open. Rate limiting is handled by Cloudflare at the edge. If you're calling this in a tight loop from automation, add a pause between requests."],
             ["Transforms are surgical", "The engine only touches files it has explicit transforms for. It does not rewrite your whole app. Unknown patterns are flagged as signals, not auto-fixed."],
-            ["Migrate ≠ commit", "The files array is a suggested diff. migrare has no access to your repo, no git integration, and no ability to commit anything. That step is always yours."],
+            ["Migrate ≠ commit", "The files array is a suggested diff. Migrare has no access to your repo, no git integration, and no ability to commit anything. That step is always yours."],
           ].map(([title, desc]) => (
             <div key={title} className="flex gap-3 items-start row-rule">
               <span className="t-green t-xs t-upper t-track row-label-md">
