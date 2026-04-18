@@ -935,17 +935,17 @@ function applyTransforms(graph, targetAdapter = "vite", platform = "lovable") {
 
   // Remove Replit config files
   if (graph.getFile(".replit")) {
-    outputFiles.delete(".replit");
+    outputFiles.set(".replit", { path: ".replit", content: "", modified: true, deleted: true });
     transformLog.push({ transform: "remove-replit-config", file: ".replit", action: "deleted" });
   }
   if (graph.getFile("replit.nix")) {
-    outputFiles.delete("replit.nix");
+    outputFiles.set("replit.nix", { path: "replit.nix", content: "", modified: true, deleted: true });
     transformLog.push({ transform: "remove-replit-config", file: "replit.nix", action: "deleted" });
   }
 
   // Remove v0 config folder
   if (graph.getFile(".v0")) {
-    outputFiles.delete(".v0");
+    outputFiles.set(".v0", { path: ".v0", content: "", modified: true, deleted: true });
     transformLog.push({ transform: "remove-v0-config", file: ".v0", action: "deleted" });
   }
 
@@ -1232,7 +1232,9 @@ async function handleMigrate(request, corsHeaders, env, ip) {
 
   const files = [];
   for (const [path, file] of outputFiles) {
-    if (dryRun || file.modified) {
+    if (file.deleted) {
+      files.push({ path, content: "", deleted: true });
+    } else if (dryRun || file.modified) {
       files.push({ path, content: file.content });
     }
   }
