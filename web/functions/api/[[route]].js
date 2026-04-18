@@ -290,7 +290,9 @@ function detectPlatform(graph) {
   const boltSignals = [];
   if (graph.getFile(".bolt")) boltSignals.push(".bolt config file");
   if (graph.getFile(".stackblitz")) boltSignals.push(".stackblitz config");
-  if (graph.hasDependency("@boltdev/vite-plugin") || graph.hasDependency("@boltdev/plugins")) {
+  const hasBoltDep = graph.hasDependency("@boltdev/vite-plugin");
+  const hasBoltDeps = graph.hasDependency("@boltdev/plugins");
+  if (hasBoltDep || hasBoltDeps) {
     boltSignals.push("@boltdev/vite-plugin dependency");
   }
   const boltViteConfig = graph.getFile("vite.config.ts") ?? graph.getFile("vite.config.js");
@@ -461,7 +463,9 @@ function scanBolt(graph) {
   }
 
   // Bolt plugin dependency
-  if (graph.hasDependency("@boltdev/vite-plugin") || graph.hasDependency("@boltdev/plugins")) {
+  const hasBoltDep = graph.hasDependency("@boltdev/vite-plugin");
+  const hasBoltDep2 = graph.hasDependency("@boltdev/plugins");
+  if (hasBoltDep || hasBoltDep2) {
     out.push({
       id: "build-config:package-json", platform: "bolt", category: "build-config",
       severity: "info", confidence: "high", location: { file: "package.json" },
@@ -917,7 +921,9 @@ function applyTransforms(graph, targetAdapter = "vite", platform = "lovable") {
   }
 
   // Remove Bolt plugin from devDependencies
-  if (pkgFile && (graph.hasDependency("@boltdev/vite-plugin") || graph.hasDependency("@boltdev/plugins")) {
+  const hasBoltPlugin = graph.hasDependency("@boltdev/vite-plugin");
+  const hasBoltPlugins = graph.hasDependency("@boltdev/plugins");
+  if (pkgFile && (hasBoltPlugin || hasBoltPlugins)) {
     try {
       const pkg = JSON.parse(pkgFile.content);
       delete pkg.devDependencies?.["@boltdev/vite-plugin"];
@@ -978,8 +984,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const hasMigrations = migrationCount > 0;
 
     // .env.example — include both app vars and DB connection string format
-    const envUrlKey = `${envPrefix}SUPABASE_URL`;
-    const envAnonKey = `${envPrefix}SUPABASE_ANON_KEY`;
     const envExample = `# ── App environment ──────────────────────────────────────────────────────────
 # Copy this file to .env and fill in real values. Never commit .env to git.
 
