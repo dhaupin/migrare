@@ -7,6 +7,37 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.0] — 2026-04-17
+
+Bolt.new, Replit, and v0 (Vercel) support added.
+
+### Added
+
+**Platform support**
+- Bolt.new plugin — detection (`.bolt`, StackBlitz config, @boltdev/* deps), scanners, transforms
+- Replit plugin — detection (`.replit`, replit.nix, @replit/* deps, env vars), scanners, transforms
+- v0 (Vercel) plugin — detection (`.v0/`, @vercel/v0, v0-core), scanners, transforms
+
+**API**
+- Platform status endpoint — returns all supported platforms and their transforms
+- Migration guide generation — auto-generates MIGRATION_GUIDE.md when Supabase client detected
+- Supabase client extraction — reads project URL from generated client, creates portable env-based version
+
+**Security**
+- Path traversal rejection — rejects ZIP entries with `..` in paths
+- Bounds checking — validates entry headers and data against buffer size
+
+### Changed
+
+**Web UI**
+- API status indicator — sidebar shows "online"/"offline"/"checking..." status
+- Buttons disabled when API is unreachable
+
+**Docs & marketing**
+- Platform support page now shows all 4 platforms as ready
+
+---
+
 ## [0.0.1] — 2026-04-08
 
 First public release. Lovable migration works end-to-end in the web tool.

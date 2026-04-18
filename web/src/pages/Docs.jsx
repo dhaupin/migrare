@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "What platforms are supported?",
-    a: "Lovable is fully supported today. Bolt.new and Replit support are planned for future versions. The scanner framework is extensible so new platforms can be added as plugins.",
+    a: "Lovable, Bolt.new, Replit, and v0 (Vercel) are fully supported. Base44 support is planned. The scanner framework is extensible so new platforms can be added as plugins.",
   },
   {
     q: "Do I need an account?",

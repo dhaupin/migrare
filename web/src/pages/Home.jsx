@@ -6,9 +6,9 @@ import GithubIcon from "../components/GithubIcon";
 
 const platforms = [
   { name: "Lovable", status: "ready" },
-  { name: "Bolt.new", status: "soon" },
-  { name: "Replit", status: "soon" },
-  { name: "v0 / Vercel", status: "soon" },
+  { name: "Bolt.new", status: "ready" },
+  { name: "Replit", status: "ready" },
+  { name: "v0 / Vercel", status: "ready" },
 ];
 
 const features = [
