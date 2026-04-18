@@ -286,6 +286,30 @@ function detectPlatform(graph) {
     }
   }
 
+  // Bolt detection
+  const boltSignals = [];
+  if (graph.getFile(".bolt")) boltSignals.push(".bolt config file");
+  if (graph.getFile(".stackblitz")) boltSignals.push(".stackblitz config");
+  if (graph.hasDependency("@boltdev/vite-plugin") || graph.hasDependency("@boltdev/plugins")) {
+    boltSignals.push("@boltdev/vite-plugin dependency");
+  }
+  const boltViteConfig = graph.getFile("vite.config.ts") ?? graph.getFile("vite.config.js");
+  if (boltViteConfig?.content.includes("@boltdev") || boltViteConfig?.content.includes("boltPlugin")) {
+    boltSignals.push("Bolt plugin in vite.config");
+  }
+  for (const key of graph.env.keys()) {
+    if (key.startsWith("BOLT_") || key.startsWith("GPT_ENGINEER")) {
+      boltSignals.push("Bolt env vars detected");
+      break;
+    }
+  }
+
+  // Return platform with highest confidence
+  if (boltSignals.length > 0) {
+    const confidence = boltSignals.length >= 2 ? "high" : "medium";
+    return { platform: "bolt", confidence, signals: boltSignals };
+  }
+
   if (signals.length === 0) return { platform: "unknown", confidence: "low", signals: [] };
   const confidence = signals.length >= 3 ? "high" : "medium";
   return { platform: "lovable", confidence, signals };
@@ -359,6 +383,80 @@ function scanLovable(graph) {
           severity: "warning", confidence: "medium",
           location: { file: file.path, line: i + 1 },
           description: `Lovable-specific env var or global: ${line.trim()}`,
+          suggestion: "Replace with standard VITE_* env var",
+        });
+      }
+    });
+  }
+
+  return out;
+}
+
+// =============================================================================
+// BOLT SCANNER
+// =============================================================================
+
+function scanBolt(graph) {
+  const out = [];
+  const supabaseRx = /@supabase\/(supabase-js|auth-helpers|ssr)/;
+
+  // Supabase direct imports (same as Lovable)
+  for (const file of graph.findFiles(/\.(tsx?|jsx?)$/)) {
+    file.content.split("\n").forEach((line, i) => {
+      if (supabaseRx.test(line)) {
+        out.push({
+          id: `supabase-direct-import:${file.path}:${i}`,
+          platform: "bolt", category: "auth-coupling", severity: "warning", confidence: "high",
+          location: { file: file.path, line: i + 1 },
+          description: "Direct Supabase import in component — will break outside Bolt environment",
+          suggestion: "Extract to a service layer: src/services/auth.ts",
+        });
+      }
+    });
+  }
+
+  // Bolt plugin in vite.config
+  const viteConfig = graph.getFile("vite.config.ts") ?? graph.getFile("vite.config.js");
+  if (viteConfig?.content.includes("@boltdev") || viteConfig?.content.includes("boltPlugin")) {
+    out.push({
+      id: "build-config:vite-config", platform: "bolt", category: "build-config",
+      severity: "warning", confidence: "high", location: { file: viteConfig.path },
+      description: "Bolt vite plugin in config - Bolt-only dev tool",
+      suggestion: "Remove Bolt plugin from plugins array",
+    });
+  }
+
+  // Bolt plugin dependency
+  if (graph.hasDependency("@boltdev/vite-plugin") || graph.hasDependency("@boltdev/plugins")) {
+    out.push({
+      id: "build-config:package-json", platform: "bolt", category: "build-config",
+      severity: "info", confidence: "high", location: { file: "package.json" },
+      description: "@boltdev/vite-plugin in devDependencies serves no purpose outside Bolt",
+      suggestion: "Remove from devDependencies",
+    });
+  }
+
+  // Generated Supabase client (same pattern as Lovable)
+  const clientFile = graph.getFile("src/integrations/supabase/client.ts");
+  if (clientFile) {
+    out.push({
+      id: "generated-supabase-client:client", platform: "bolt", category: "state-entanglement",
+      severity: "error", confidence: "high", location: { file: clientFile.path },
+      description: "Generated Supabase client contains hardcoded project URL and anon key",
+      suggestion: "Move credentials to .env and create a portable client factory",
+    });
+  }
+
+  // Bolt env var bleed
+  const boltBleedRx = /GPT_ENGINEER_|BOLT_|__bolt/;
+  for (const file of graph.findFiles(/(\.(env|ts|tsx|js|jsx))$/)) {
+    file.content.split("\n").forEach((line, i) => {
+      if (boltBleedRx.test(line)) {
+        out.push({
+          id: `env-bleed:${file.path}:${i}`, platform: "bolt", category: "environment-bleed",
+          severity: "warning", confidence: "medium",
+          location: { file: file.path, line: i + 1 },
+          description: `Bolt-specific env var: ${line.trim()}`,
           suggestion: "Replace with standard VITE_* env var",
         });
       }
@@ -590,6 +688,7 @@ function applyTransforms(graph, targetAdapter = "vite") {
   const isNextjs = targetAdapter === "nextjs";
   const envPrefix = isNextjs ? "NEXT_PUBLIC_" : "VITE_";
 
+  // Remove Lovable plugin
   for (const configPath of ["vite.config.ts", "vite.config.js"]) {
     const file = graph.getFile(configPath);
     if (file?.content.includes("lovable-tagger")) {
@@ -601,6 +700,20 @@ function applyTransforms(graph, targetAdapter = "vite") {
     }
   }
 
+  // Remove Bolt plugin
+  for (const configPath of ["vite.config.ts", "vite.config.js"]) {
+    const file = graph.getFile(configPath);
+    if (file?.content.includes("@boltdev") || file?.content.includes("boltPlugin")) {
+      let content = file.content;
+      // Remove @boltdev imports
+      content = content.replace(/^.*import.*@boltdev.*\n/m, "");
+      // Remove boltPlugin calls
+      content = content.replace(/\s*boltPlugin\(\),?\s*/g, "");
+      outputFiles.set(configPath, { ...file, content, modified: true });
+      transformLog.push({ transform: "remove-bolt-plugin", file: configPath, action: "modified" });
+    }
+  }
+
   const pkgFile = graph.getFile("package.json");
   if (pkgFile && graph.hasDependency("lovable-tagger")) {
     try {
@@ -608,6 +721,17 @@ function applyTransforms(graph, targetAdapter = "vite") {
       delete pkg.devDependencies?.["lovable-tagger"];
       outputFiles.set("package.json", { ...pkgFile, content: JSON.stringify(pkg, null, 2), modified: true });
       transformLog.push({ transform: "remove-lovable-tagger", file: "package.json", action: "modified" });
+    } catch { /* ignore */ }
+  }
+
+  // Remove Bolt plugin from devDependencies
+  if (pkgFile && (graph.hasDependency("@boltdev/vite-plugin") || graph.hasDependency("@boltdev/plugins")) {
+    try {
+      const pkg = JSON.parse(pkgFile.content);
+      delete pkg.devDependencies?.["@boltdev/vite-plugin"];
+      delete pkg.devDependencies?.["@boltdev/plugins"];
+      outputFiles.set("package.json", { ...pkgFile, content: JSON.stringify(pkg, null, 2), modified: true });
+      transformLog.push({ transform: "remove-bolt-plugin", file: "package.json", action: "modified" });
     } catch { /* ignore */ }
   }
 
@@ -676,7 +800,7 @@ ${envAnonKey}=<your-anon-key>
     transformLog.push({ transform: "abstract-supabase-client", file: "MIGRATION_GUIDE.md", action: "created" });
   }
 
-  const bleedRx = /GPT_ENGINEER_|LOVABLE_/;
+  const bleedRx = /GPT_ENGINEER_|LOVABLE_|BOLT_/;
   const newEnvPrefix = isNextjs ? "NEXT_PUBLIC_" : "VITE_";
   for (const [path, file] of outputFiles) {
     if (!/\.(env|ts|tsx|js|jsx)$/.test(path)) continue;
@@ -684,6 +808,7 @@ ${envAnonKey}=<your-anon-key>
     let content = file.content;
     content = content.replace(/GPT_ENGINEER_/g, newEnvPrefix);
     content = content.replace(/LOVABLE_/g, newEnvPrefix);
+    content = content.replace(/BOLT_/g, newEnvPrefix);
     content = content.replace(new RegExp(`${newEnvPrefix}${newEnvPrefix}`, "g"), `${newEnvPrefix}`);
     outputFiles.set(path, { ...file, content, modified: true });
     transformLog.push({ transform: "remove-env-bleed", file: path, action: "modified" });
@@ -780,7 +905,7 @@ async function handleSpec(corsHeaders) {
     ],
     platforms: [
       { id: "lovable", status: "ready", transforms: ["remove-lovable-tagger", "abstract-supabase-client", "remove-env-bleed"] },
-      { id: "bolt",    status: "planned" },
+      { id: "bolt",    status: "ready", transforms: ["remove-bolt-plugin", "abstract-supabase-client", "remove-env-bleed"] },
       { id: "replit",  status: "planned" },
       { id: "base44",  status: "research", notes: "AI app builder. Backend locked to Base44 infrastructure. Uses proprietary entity access system. Frontend exports to GitHub but backend cannot self-host. Data stored on Base44. Lock-in: backend code, entity access queries, proprietary API calls." },
     ],
@@ -827,7 +952,9 @@ async function handleScan(request, corsHeaders, env, ip) {
     }, { headers: corsHeaders });
   }
 
-  const signals = scanLovable(graph);
+  const signals = detection.platform === "bolt" ? scanBolt(graph)
+    : detection.platform === "lovable" ? scanLovable(graph)
+    : [];
   return Response.json({
     platform: detection.platform,
     confidence: detection.confidence,
@@ -871,12 +998,14 @@ async function handleMigrate(request, corsHeaders, env, ip) {
   const startTime = Date.now();
   const graph = buildGraph(fileMap, source.name ?? "project.zip");
   const detection = detectPlatform(graph);
-  const signals = detection.platform !== "unknown" ? scanLovable(graph) : [];
+  const signals = detection.platform === "bolt" ? scanBolt(graph)
+    : detection.platform === "lovable" ? scanLovable(graph)
+    : [];
 
   let transformLog = [];
   let outputFiles = graph.files;
 
-  if (!dryRun && detection.platform === "lovable") {
+  if (!dryRun && (detection.platform === "lovable" || detection.platform === "bolt")) {
     const result = applyTransforms(graph, targetAdapter);
     outputFiles = result.outputFiles;
     transformLog = result.transformLog;
