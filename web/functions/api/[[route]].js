@@ -330,6 +330,20 @@ function detectPlatform(graph) {
     return { platform: "replit", confidence, signals: replitSignals };
   }
 
+  // v0 detection (Vercel)
+  const v0Signals = [];
+  if (graph.getFile(".v0")) v0Signals.push(".v0 config folder");
+  if (graph.getFile(".v0config.json")) v0Signals.push("v0 config file");
+  const v0Pkg = graph.getFile("package.json");
+  if (v0Pkg?.content.includes("@vercel/v0") || v0Pkg?.content.includes("v0-core")) {
+    v0Signals.push("v0 dependency in package.json");
+  }
+
+  if (v0Signals.length > 0) {
+    const confidence = v0Signals.length >= 2 ? "high" : "medium";
+    return { platform: "v0", confidence, signals: v0Signals };
+  }
+
   if (signals.length === 0) return { platform: "unknown", confidence: "low", signals: [] };
   const confidence = signals.length >= 3 ? "high" : "medium";
   return { platform: "lovable", confidence, signals };
@@ -554,6 +568,90 @@ function scanReplit(graph) {
           suggestion: "Replace with standard VITE_* env var",
         });
       }
+    });
+  }
+
+  return out;
+}
+
+// =============================================================================
+// v0 SCANNER (Vercel)
+// =============================================================================
+
+function scanV0(graph) {
+  const out = [];
+  const supabaseRx = /@supabase\/(supabase-js|auth-helpers|ssr)/;
+
+  // Supabase direct imports (same pattern)
+  for (const file of graph.findFiles(/\.(tsx?|jsx?)$/)) {
+    file.content.split("\n").forEach((line, i) => {
+      if (supabaseRx.test(line)) {
+        out.push({
+          id: `supabase-direct-import:${file.path}:${i}`,
+          platform: "v0", category: "auth-coupling", severity: "warning", confidence: "high",
+          location: { file: file.path, line: i + 1 },
+          description: "Direct Supabase import in component — verify credentials work outside v0",
+          suggestion: "Extract to a service layer: src/lib/supabase.ts",
+        });
+      }
+    });
+  }
+
+  // v0 config folder
+  if (graph.getFile(".v0")) {
+    out.push({
+      id: "build-config:v0-config", platform: "v0", category: "build-config",
+      severity: "info", confidence: "high", location: { file: ".v0" },
+      description: "v0 prompt history folder - contains your prompts to the AI",
+      suggestion: "Optional: Remove if you no longer need the prompt history",
+    });
+  }
+
+  // v0 dependencies
+  const v0Pkg = graph.getFile("package.json");
+  if (v0Pkg?.content.includes("@vercel/v0") || v0Pkg?.content.includes("v0-core")) {
+    out.push({
+      id: "build-config:v0-deps", platform: "v0", category: "build-config",
+      severity: "info", confidence: "high", location: { file: "package.json" },
+      description: "v0-specific packages in dependencies",
+      suggestion: "Remove v0 packages if not needed outside v0",
+    });
+  }
+
+  // Generated Supabase client (same pattern as Lovable/Bolt/Replit)
+  const clientFile = graph.getFile("src/integrations/supabase/client.ts");
+  if (clientFile) {
+    out.push({
+      id: "generated-supabase-client:client", platform: "v0", category: "state-entanglement",
+      severity: "error", confidence: "high", location: { file: clientFile.path },
+      description: "Generated Supabase client contains hardcoded project URL and anon key",
+      suggestion: "Move credentials to .env and create a portable client factory",
+    });
+  }
+
+  // v0 env var bleed
+  const v0BleedRx = /V0_|GPT_ENGINEER_/;
+  for (const file of graph.findFiles(/(\.(env|ts|tsx|js|jsx))$/)) {
+    file.content.split("\n").forEach((line, i) => {
+      if (v0BleedRx.test(line)) {
+        out.push({
+          id: `env-bleed:${file.path}:${i}`, platform: "v0", category: "environment-bleed",
+          severity: "warning", confidence: "medium",
+          location: { file: file.path, line: i + 1 },
+          description: `v0-specific env var: ${line.trim()}`,
+          suggestion: "Replace with standard env var (VITE_* or NEXT_PUBLIC_*)",
+        });
+      }
+    });
+  }
+
+  // Vercel deployment preference (info only - not really lock-in)
+  if (graph.getFile("vercel.json") || graph.getFile(".vercel")) {
+    out.push({
+      id: "deployment:vercel", platform: "v0", category: "deployment",
+      severity: "info", confidence: "high", location: { file: "vercel.json" },
+      description: "Vercel deployment configuration detected",
+      suggestion: "Code is portable - can deploy to any Node.js host",
     });
   }
 
@@ -839,6 +937,12 @@ function applyTransforms(graph, targetAdapter = "vite", platform = "lovable") {
     transformLog.push({ transform: "remove-replit-config", file: "replit.nix", action: "deleted" });
   }
 
+  // Remove v0 config folder
+  if (graph.getFile(".v0")) {
+    outputFiles.delete(".v0");
+    transformLog.push({ transform: "remove-v0-config", file: ".v0", action: "deleted" });
+  }
+
   const clientFile = graph.getFile("src/integrations/supabase/client.ts");
   if (clientFile) {
     const urlMatch = clientFile.content.match(/["'](https:\/\/([a-zA-Z0-9]+)\.supabase\.co)["']/);
@@ -848,7 +952,7 @@ function applyTransforms(graph, targetAdapter = "vite", platform = "lovable") {
     const envUrlKey = `${envPrefix}SUPABASE_URL`;
     const envAnonKey = `${envPrefix}SUPABASE_ANON_KEY`;
 
-    const portableClient = `// Generated by migrare — ${graph.platform === "replit" ? "Replit" : graph.platform === "bolt" ? "Bolt" : "Lovable"} migration
+    const portableClient = `// Generated by migrare — ${graph.platform === "v0" ? "v0" : graph.platform === "replit" ? "Replit" : graph.platform === "bolt" ? "Bolt" : "Lovable"} migration
 // Supabase client using environment variables instead of hardcoded values.
 import { createClient } from "@supabase/supabase-js";
 
@@ -904,7 +1008,7 @@ ${envAnonKey}=<your-anon-key>
     transformLog.push({ transform: "abstract-supabase-client", file: "MIGRATION_GUIDE.md", action: "created" });
   }
 
-  const bleedRx = /GPT_ENGINEER_|LOVABLE_|BOLT_|REPLIT_/;
+  const bleedRx = /GPT_ENGINEER_|LOVABLE_|BOLT_|REPLIT_|V0_/;
   const newEnvPrefix = isNextjs ? "NEXT_PUBLIC_" : "VITE_";
   for (const [path, file] of outputFiles) {
     if (!/\.(env|ts|tsx|js|jsx)$/.test(path)) continue;
@@ -914,6 +1018,7 @@ ${envAnonKey}=<your-anon-key>
     content = content.replace(/LOVABLE_/g, newEnvPrefix);
     content = content.replace(/BOLT_/g, newEnvPrefix);
     content = content.replace(/REPLIT_/g, newEnvPrefix);
+    content = content.replace(/V0_/g, newEnvPrefix);
     content = content.replace(new RegExp(`${newEnvPrefix}${newEnvPrefix}`, "g"), `${newEnvPrefix}`);
     outputFiles.set(path, { ...file, content, modified: true });
     transformLog.push({ transform: "remove-env-bleed", file: path, action: "modified" });
@@ -1012,6 +1117,7 @@ async function handleSpec(corsHeaders) {
       { id: "lovable", status: "ready", transforms: ["remove-lovable-tagger", "abstract-supabase-client", "remove-env-bleed"] },
       { id: "bolt",    status: "ready", transforms: ["remove-bolt-plugin", "abstract-supabase-client", "remove-env-bleed"] },
       { id: "replit",  status: "ready", transforms: ["remove-replit-config", "abstract-supabase-client", "remove-env-bleed"] },
+      { id: "v0",      status: "ready", transforms: ["remove-v0-config", "abstract-supabase-client", "remove-env-bleed"] },
       { id: "base44",  status: "research", notes: "AI app builder. Backend locked to Base44 infrastructure. Uses proprietary entity access system. Frontend exports to GitHub but backend cannot self-host. Data stored on Base44. Lock-in: backend code, entity access queries, proprietary API calls." },
     ],
     links: {
@@ -1057,7 +1163,8 @@ async function handleScan(request, corsHeaders, env, ip) {
     }, { headers: corsHeaders });
   }
 
-  const signals = detection.platform === "replit" ? scanReplit(graph)
+  const signals = detection.platform === "v0" ? scanV0(graph)
+    : detection.platform === "replit" ? scanReplit(graph)
     : detection.platform === "bolt" ? scanBolt(graph)
     : detection.platform === "lovable" ? scanLovable(graph)
     : [];
@@ -1104,7 +1211,8 @@ async function handleMigrate(request, corsHeaders, env, ip) {
   const startTime = Date.now();
   const graph = buildGraph(fileMap, source.name ?? "project.zip");
   const detection = detectPlatform(graph);
-  const signals = detection.platform === "replit" ? scanReplit(graph)
+  const signals = detection.platform === "v0" ? scanV0(graph)
+    : detection.platform === "replit" ? scanReplit(graph)
     : detection.platform === "bolt" ? scanBolt(graph)
     : detection.platform === "lovable" ? scanLovable(graph)
     : [];
@@ -1112,7 +1220,7 @@ async function handleMigrate(request, corsHeaders, env, ip) {
   let transformLog = [];
   let outputFiles = graph.files;
 
-  if (!dryRun && (detection.platform === "lovable" || detection.platform === "bolt" || detection.platform === "replit")) {
+  if (!dryRun && (detection.platform === "lovable" || detection.platform === "bolt" || detection.platform === "replit" || detection.platform === "v0")) {
     const result = applyTransforms(graph, targetAdapter, detection.platform);
     outputFiles = result.outputFiles;
     transformLog = result.transformLog;

@@ -292,6 +292,13 @@ export default function MigrateApp() {
 
   const busy = scanning || migrating;
   const hasProject = !!loadedFile;
+  const apiOnline = serverOk === true;
+  const hasFile = hasProject && apiOnline;
+  const statusLabel = apiOnline
+    ? "online"
+    : serverOk === false
+    ? "offline"
+    : "checking…";
 
   return (
     <div className="app-shell">
@@ -301,6 +308,22 @@ export default function MigrateApp() {
 
         {/* ── sidebar ── */}
         <aside className="sidebar">
+          
+          {/* API status */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="section-label section-label-inline">api</span>
+            <span
+              className={`text-xs px-2 py-0.5 rounded ${
+                apiOnline
+                  ? "bg-green-900/40 text-green-400"
+                  : serverOk === false
+                  ? "bg-red-900/40 text-red-400"
+                  : "bg-zinc-700 text-zinc-400"
+              }`}
+            >
+              {statusLabel}
+            </span>
+          </div>
 
           {/* source */}
           <div className="flex items-center gap-2 mb-2">
@@ -347,7 +370,7 @@ export default function MigrateApp() {
             <div className="flex items-center gap-2">
               <button
                 className="btn btn-ghost btn-block"
-                disabled={!hasProject || busy}
+                disabled={!hasFile || busy}
                 onClick={runScan}
               >
                 {scanning ? <Spinner label="scanning…" /> : "◉ scan"}
@@ -378,7 +401,7 @@ export default function MigrateApp() {
                 </div>
                 <button
                   className="btn btn-primary btn-block btn-center"
-                  disabled={!hasProject || busy}
+                  disabled={!hasFile || busy}
                   onClick={runMigrate}
                 >
                   {migrating
