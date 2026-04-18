@@ -310,6 +310,26 @@ function detectPlatform(graph) {
     return { platform: "bolt", confidence, signals: boltSignals };
   }
 
+  // Replit detection
+  const replitSignals = [];
+  if (graph.getFile(".replit")) replitSignals.push(".replit config file");
+  if (graph.getFile("replit.nix")) replitSignals.push("replit.nix config");
+  const replitPkg = graph.getFile("package.json");
+  if (replitPkg?.content.includes("replit") || replitPkg?.content.includes("@replit")) {
+    replitSignals.push("replit dependency in package.json");
+  }
+  for (const key of graph.env.keys()) {
+    if (key.startsWith("REPLIT_") || key.startsWith("REPL_")) {
+      replitSignals.push("Replit env vars detected");
+      break;
+    }
+  }
+
+  if (replitSignals.length > 0) {
+    const confidence = replitSignals.length >= 2 ? "high" : "medium";
+    return { platform: "replit", confidence, signals: replitSignals };
+  }
+
   if (signals.length === 0) return { platform: "unknown", confidence: "low", signals: [] };
   const confidence = signals.length >= 3 ? "high" : "medium";
   return { platform: "lovable", confidence, signals };
@@ -457,6 +477,80 @@ function scanBolt(graph) {
           severity: "warning", confidence: "medium",
           location: { file: file.path, line: i + 1 },
           description: `Bolt-specific env var: ${line.trim()}`,
+          suggestion: "Replace with standard VITE_* env var",
+        });
+      }
+    });
+  }
+
+  return out;
+}
+
+// =============================================================================
+// REPLIT SCANNER
+// =============================================================================
+
+function scanReplit(graph) {
+  const out = [];
+  const supabaseRx = /@supabase\/(supabase-js|auth-helpers|ssr)/;
+
+  // Supabase direct imports (same as Lovable/Bolt)
+  for (const file of graph.findFiles(/\.(tsx?|jsx?)$/)) {
+    file.content.split("\n").forEach((line, i) => {
+      if (supabaseRx.test(line)) {
+        out.push({
+          id: `supabase-direct-import:${file.path}:${i}`,
+          platform: "replit", category: "auth-coupling", severity: "warning", confidence: "high",
+          location: { file: file.path, line: i + 1 },
+          description: "Direct Supabase import in component — will break outside Replit environment",
+          suggestion: "Extract to a service layer: src/services/auth.ts",
+        });
+      }
+    });
+  }
+
+  // Replit config files
+  if (graph.getFile(".replit") || graph.getFile("replit.nix")) {
+    out.push({
+      id: "build-config:replit-config", platform: "replit", category: "build-config",
+      severity: "warning", confidence: "high", location: { file: ".replit" },
+      description: "Replit configuration file present - Replit-specific setup",
+      suggestion: "Remove .replit and replit.nix, use standard package.json scripts",
+    });
+  }
+
+  // Replit dependencies
+  const replitPkg = graph.getFile("package.json");
+  if (replitPkg?.content.includes("replit")) {
+    out.push({
+      id: "build-config:replit-deps", platform: "replit", category: "build-config",
+      severity: "info", confidence: "high", location: { file: "package.json" },
+      description: "Replit-specific packages in dependencies",
+      suggestion: "Remove replit packages from dependencies",
+    });
+  }
+
+  // Generated Supabase client (same pattern as Lovable/Bolt)
+  const clientFile = graph.getFile("src/integrations/supabase/client.ts");
+  if (clientFile) {
+    out.push({
+      id: "generated-supabase-client:client", platform: "replit", category: "state-entanglement",
+      severity: "error", confidence: "high", location: { file: clientFile.path },
+      description: "Generated Supabase client contains hardcoded project URL and anon key",
+      suggestion: "Move credentials to .env and create a portable client factory",
+    });
+  }
+
+  // Replit env var bleed
+  const replitBleedRx = /GPT_ENGINEER_|REPLIT_|REPL_/;
+  for (const file of graph.findFiles(/(\.(env|ts|tsx|js|jsx))$/)) {
+    file.content.split("\n").forEach((line, i) => {
+      if (replitBleedRx.test(line)) {
+        out.push({
+          id: `env-bleed:${file.path}:${i}`, platform: "replit", category: "environment-bleed",
+          severity: "warning", confidence: "medium",
+          location: { file: file.path, line: i + 1 },
+          description: `Replit-specific env var: ${line.trim()}`,
           suggestion: "Replace with standard VITE_* env var",
         });
       }
@@ -735,6 +829,16 @@ function applyTransforms(graph, targetAdapter = "vite", platform = "lovable") {
     } catch { /* ignore */ }
   }
 
+  // Remove Replit config files
+  if (graph.getFile(".replit")) {
+    outputFiles.delete(".replit");
+    transformLog.push({ transform: "remove-replit-config", file: ".replit", action: "deleted" });
+  }
+  if (graph.getFile("replit.nix")) {
+    outputFiles.delete("replit.nix");
+    transformLog.push({ transform: "remove-replit-config", file: "replit.nix", action: "deleted" });
+  }
+
   const clientFile = graph.getFile("src/integrations/supabase/client.ts");
   if (clientFile) {
     const urlMatch = clientFile.content.match(/["'](https:\/\/([a-zA-Z0-9]+)\.supabase\.co)["']/);
@@ -744,7 +848,7 @@ function applyTransforms(graph, targetAdapter = "vite", platform = "lovable") {
     const envUrlKey = `${envPrefix}SUPABASE_URL`;
     const envAnonKey = `${envPrefix}SUPABASE_ANON_KEY`;
 
-    const portableClient = `// Generated by migrare — ${graph.platform === "bolt" ? "Bolt" : "Lovable"} migration
+    const portableClient = `// Generated by migrare — ${graph.platform === "replit" ? "Replit" : graph.platform === "bolt" ? "Bolt" : "Lovable"} migration
 // Supabase client using environment variables instead of hardcoded values.
 import { createClient } from "@supabase/supabase-js";
 
@@ -800,7 +904,7 @@ ${envAnonKey}=<your-anon-key>
     transformLog.push({ transform: "abstract-supabase-client", file: "MIGRATION_GUIDE.md", action: "created" });
   }
 
-  const bleedRx = /GPT_ENGINEER_|LOVABLE_|BOLT_/;
+  const bleedRx = /GPT_ENGINEER_|LOVABLE_|BOLT_|REPLIT_/;
   const newEnvPrefix = isNextjs ? "NEXT_PUBLIC_" : "VITE_";
   for (const [path, file] of outputFiles) {
     if (!/\.(env|ts|tsx|js|jsx)$/.test(path)) continue;
@@ -809,6 +913,7 @@ ${envAnonKey}=<your-anon-key>
     content = content.replace(/GPT_ENGINEER_/g, newEnvPrefix);
     content = content.replace(/LOVABLE_/g, newEnvPrefix);
     content = content.replace(/BOLT_/g, newEnvPrefix);
+    content = content.replace(/REPLIT_/g, newEnvPrefix);
     content = content.replace(new RegExp(`${newEnvPrefix}${newEnvPrefix}`, "g"), `${newEnvPrefix}`);
     outputFiles.set(path, { ...file, content, modified: true });
     transformLog.push({ transform: "remove-env-bleed", file: path, action: "modified" });
@@ -906,7 +1011,7 @@ async function handleSpec(corsHeaders) {
     platforms: [
       { id: "lovable", status: "ready", transforms: ["remove-lovable-tagger", "abstract-supabase-client", "remove-env-bleed"] },
       { id: "bolt",    status: "ready", transforms: ["remove-bolt-plugin", "abstract-supabase-client", "remove-env-bleed"] },
-      { id: "replit",  status: "planned" },
+      { id: "replit",  status: "ready", transforms: ["remove-replit-config", "abstract-supabase-client", "remove-env-bleed"] },
       { id: "base44",  status: "research", notes: "AI app builder. Backend locked to Base44 infrastructure. Uses proprietary entity access system. Frontend exports to GitHub but backend cannot self-host. Data stored on Base44. Lock-in: backend code, entity access queries, proprietary API calls." },
     ],
     links: {
@@ -952,7 +1057,8 @@ async function handleScan(request, corsHeaders, env, ip) {
     }, { headers: corsHeaders });
   }
 
-  const signals = detection.platform === "bolt" ? scanBolt(graph)
+  const signals = detection.platform === "replit" ? scanReplit(graph)
+    : detection.platform === "bolt" ? scanBolt(graph)
     : detection.platform === "lovable" ? scanLovable(graph)
     : [];
   return Response.json({
@@ -998,14 +1104,15 @@ async function handleMigrate(request, corsHeaders, env, ip) {
   const startTime = Date.now();
   const graph = buildGraph(fileMap, source.name ?? "project.zip");
   const detection = detectPlatform(graph);
-  const signals = detection.platform === "bolt" ? scanBolt(graph)
+  const signals = detection.platform === "replit" ? scanReplit(graph)
+    : detection.platform === "bolt" ? scanBolt(graph)
     : detection.platform === "lovable" ? scanLovable(graph)
     : [];
 
   let transformLog = [];
   let outputFiles = graph.files;
 
-  if (!dryRun && (detection.platform === "lovable" || detection.platform === "bolt")) {
+  if (!dryRun && (detection.platform === "lovable" || detection.platform === "bolt" || detection.platform === "replit")) {
     const result = applyTransforms(graph, targetAdapter, detection.platform);
     outputFiles = result.outputFiles;
     transformLog = result.transformLog;
