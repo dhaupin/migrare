@@ -782,6 +782,7 @@ async function handleSpec(corsHeaders) {
       { id: "lovable", status: "ready", transforms: ["remove-lovable-tagger", "abstract-supabase-client", "remove-env-bleed"] },
       { id: "bolt",    status: "planned" },
       { id: "replit",  status: "planned" },
+      { id: "base44",  status: "research", notes: "AI app builder. Backend locked to Base44 infrastructure. Uses proprietary entity access system. Frontend exports to GitHub but backend cannot self-host. Data stored on Base44. Lock-in: backend code, entity access queries, proprietary API calls." },
     ],
     links: {
       llmsTxt:  "https://migrare.creadev.org/llms.txt",
