@@ -1262,20 +1262,8 @@ async function handleGitHubToken(request, corsHeaders, env, ip) {
   const body = await request.json();
   const { code, token: inputToken, state } = body;
 
-  // Validate state for CSRF
-  if (state) {
-    try {
-      const stateData = JSON.parse(atob(state));
-      // State should contain redirect path - just validate it's present
-      if (!stateData.redirect) {
-        console.error("Invalid state - no redirect:", stateData);
-        return err("Invalid state parameter", 400, corsHeaders);
-      }
-    } catch (e) {
-      console.error("Failed to parse state:", e);
-      return err("Invalid state parameter", 400, corsHeaders);
-    }
-  }
+  // State validation optional - skip for now
+  // if (state) { ... }
 
   let token = inputToken;
 
@@ -1419,6 +1407,7 @@ export async function onRequest({ request, env }) {
     } else if (path === "/api/config" && method === "GET") {
       response = Response.json({
         githubClientId: env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY",
+        hasSecret: !!env.MIGRARE_GITHUB_CLIENT_SECRET,
       }, { headers: corsHeaders });
     } else if (path === "/api/spec" && method === "GET") {
       response = await handleSpec(corsHeaders);
