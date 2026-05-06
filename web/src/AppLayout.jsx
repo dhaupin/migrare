@@ -9,6 +9,7 @@ import Docs from "./pages/Docs.jsx";
 import Contact from "./pages/Contact.jsx";
 import Terms from "./pages/Terms.jsx";
 import Privacy from "./pages/Privacy.jsx";
+import OAuthCallback from "./pages/OAuthCallback.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -31,6 +32,7 @@ export default function AppLayout() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/oauth-callback" element={<OAuthCallback />} />
           <Route path="*"      element={<Home />} />
         </Routes>
       </div>
