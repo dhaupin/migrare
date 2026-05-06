@@ -21,10 +21,11 @@ export default function OAuthCallback() {
     }
 
     // Exchange code for token
+    const stateParam = searchParams.get("state");
     fetch("/api/auth/github/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, state: stateParam }),
     })
       .then((r) => r.json())
       .then((d) => {

@@ -49,7 +49,7 @@ For CLI and web UI to access GitHub repos and open PRs:
 |-------|-------|---------|
 | `GITHUB_TOKEN` | CLI env | GitHub PAT for all operations |
 | `MIGRARE_TOKEN` | CLI env | Override GITHUB_TOKEN |
-| `MIGRARE_GITHUB_CLIENT_ID` | Web/OAuth | OAuth App client ID |
+| `VITE_MIGRARE_GITHUB_CLIENT_ID` | Web/Build | OAuth App client ID (set in CF Variables as MIGRARE_GITHUB_CLIENT_ID) |
 
 ### Creating an OAuth App
 
@@ -67,7 +67,9 @@ For the web UI's GitHub connect flow:
 3. Use the **Client ID** in your code (see `MigrateApp.jsx`, `Nav.jsx`)
 4. Add a **Client secret** (generate at bottom of OAuth App page)
 5. In the OAuth App settings, "Enable Device Flow" is optional (for CLI/mobile use)
-6. Set as Cloudflare env variable: `MIGRARE_GITHUB_CLIENT_SECRET`
+6. Set as Cloudflare env variables:
+   - `MIGRARE_GITHUB_CLIENT_ID` = your Client ID
+   - `MIGRARE_GITHUB_CLIENT_SECRET` = your Client secret
 7. The callback route must be added to `ssr.config.js` routes for prerendering
 
 ### Required scopes

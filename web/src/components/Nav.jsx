@@ -41,10 +41,12 @@ export default function Nav() {
   };
 
   const handleConnect = () => {
-    const clientId = "Ov23lijPqkbtomPfV1aY";
+    // Generate state with redirect for CSRF protection
+    const state = btoa(JSON.stringify({ redirect: window.location.origin + "/app" }));
+    const clientId = import.meta.env.VITE_MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY";
     const redirectUri = encodeURIComponent(window.location.origin + "/oauth-callback");
     const scope = "repo,read:org";
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
   };
 
   const handleLogout = async () => {

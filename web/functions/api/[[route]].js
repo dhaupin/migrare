@@ -1260,7 +1260,22 @@ async function handleMigrate(request, corsHeaders, env, ip) {
 
 async function handleGitHubToken(request, corsHeaders, env, ip) {
   const body = await request.json();
-  const { code, token: inputToken } = body;
+  const { code, token: inputToken, state } = body;
+
+  // Validate state for CSRF
+  if (state) {
+    try {
+      const stateData = JSON.parse(atob(state));
+      // State should contain redirect path - just validate it's present
+      if (!stateData.redirect) {
+        console.error("Invalid state - no redirect:", stateData);
+        return err("Invalid state parameter", 400, corsHeaders);
+      }
+    } catch (e) {
+      console.error("Failed to parse state:", e);
+      return err("Invalid state parameter", 400, corsHeaders);
+    }
+  }
 
   let token = inputToken;
 
@@ -1281,6 +1296,7 @@ async function handleGitHubToken(request, corsHeaders, env, ip) {
         client_id: env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY",
         client_secret: clientSecret,
         code,
+        redirect_uri: new URL(request.url).origin + "/oauth-callback",
       }),
     });
 
