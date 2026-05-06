@@ -51,6 +51,22 @@ For CLI and web UI to access GitHub repos and open PRs:
 | `MIGRARE_TOKEN` | CLI env | Override GITHUB_TOKEN |
 | `MIGRARE_GITHUB_CLIENT_ID` | Web/OAuth | OAuth App client ID |
 
+### Creating an OAuth App
+
+For the web UI's GitHub connect flow:
+
+1. Go to https://github.com/settings/developers → OAuth Apps → New OAuth App
+2. Fill in:
+
+| Field | Value |
+|-------|-------|
+| Application name | migrare |
+| Homepage URL | `https://migrare.creadev.org` |
+| Authorization callback URL | `https://migrare.creadev.org/oauth-callback` |
+
+3. Use the **Client ID** in your code (see `MigrateApp.jsx`, `Nav.jsx`)
+4. The callback route must be added to `ssr.config.js` routes for prerendering
+
 ### Required scopes
 
 For full migrare functionality, your GitHub token needs:
