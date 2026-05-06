@@ -1254,6 +1254,115 @@ async function handleMigrate(request, corsHeaders, env, ip) {
 }
 
 // =============================================================================
+// GITHUB OAUTH TOKEN HANDLER
+// Exchanges OAuth code for token, validates token, returns user info
+// =============================================================================
+
+async function handleGitHubToken(request, corsHeaders, env, ip) {
+  const body = await request.json();
+  const { code, token: inputToken } = body;
+
+  let token = inputToken;
+
+  // OAuth code exchange
+  if (code && !token) {
+    const clientSecret = env.MIGRARE_GITHUB_CLIENT_SECRET;
+    if (!clientSecret) {
+      return err("OAuth not configured", 500, corsHeaders);
+    }
+
+    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY",
+        client_secret: clientSecret,
+        code,
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      return err("OAuth code exchange failed", 401, corsHeaders);
+    }
+
+    const tokenData = await tokenRes.json();
+    token = tokenData.access_token;
+
+    if (!token) {
+      return err("No access token returned", 401, corsHeaders);
+    }
+  }
+
+  if (!token) {
+    return err("Token or code required", 400, corsHeaders);
+  }
+
+  // Validate token with GitHub
+  const userRes = await fetch("https://api.github.com/user", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+    },
+  });
+
+  if (!userRes.ok) {
+    return err("Invalid token", 401, corsHeaders);
+  }
+
+  const user = await userRes.json();
+
+  return Response.json({
+    user: {
+      id: String(user.id),
+      login: user.login,
+      name: user.name ?? user.login,
+      avatar: user.avatar_url,
+    },
+    token,  // Return token to client for session storage
+  }, { headers: corsHeaders });
+}
+
+// =============================================================================
+// AUTH STATUS HANDLER
+// Just checks if a token works without returning user
+// =============================================================================
+
+async function handleAuthStatus(request, corsHeaders, env, ip) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return Response.json({ authenticated: false }, { headers: corsHeaders });
+  }
+
+  const token = authHeader.slice(7);
+
+  const userRes = await fetch("https://api.github.com/user", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+    },
+  });
+
+  if (!userRes.ok) {
+    return Response.json({ authenticated: false }, { headers: corsHeaders });
+  }
+
+  const user = await userRes.json();
+
+  return Response.json({
+    authenticated: true,
+    user: {
+      id: String(user.id),
+      login: user.login,
+      name: user.name ?? user.login,
+      avatar: user.avatar_url,
+    },
+  }, { headers: corsHeaders });
+}
+
+// =============================================================================
 // ENTRY POINT
 // =============================================================================
 
@@ -1291,6 +1400,10 @@ export async function onRequest({ request, env }) {
       response = await handleScan(request, corsHeaders, env, ip);
     } else if (path === "/api/migrate" && method === "POST") {
       response = await handleMigrate(request, corsHeaders, env, ip);
+    } else if (path === "/api/auth/github/token" && method === "POST") {
+      response = await handleGitHubToken(request, corsHeaders, env, ip);
+    } else if (path === "/api/auth/status" && method === "GET") {
+      response = await handleAuthStatus(request, corsHeaders, env, ip);
     } else {
       response = err(`Not found: ${path}`, 404, corsHeaders);
     }
