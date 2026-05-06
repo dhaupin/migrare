@@ -328,8 +328,36 @@ async function handleRequest(
       let token = inputToken;
 
       if (code && !token) {
-        // OAuth code exchange - not implemented for local dev without client secret
-        return jsonError(res, 400, "OAuth exchange not implemented for local dev. Use PAT instead.");
+        // OAuth code exchange
+        const clientSecret = process.env.MIGRARE_GITHUB_CLIENT_SECRET;
+        if (!clientSecret) {
+          return jsonError(res, 500, "OAuth not configured");
+        }
+        
+        // Exchange code for token
+        const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            client_id: process.env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY",
+            client_secret: clientSecret,
+            code,
+          }),
+        });
+        
+        if (!tokenRes.ok) {
+          return jsonError(res, 401, "OAuth code exchange failed");
+        }
+        
+        const tokenData = await tokenRes.json();
+        token = tokenData.access_token;
+        
+        if (!token) {
+          return jsonError(res, 401, "No access token returned");
+        }
       }
 
       if (!token) {
@@ -361,6 +389,11 @@ async function handleRequest(
       // Cache the validation result
       setCachedToken(token, authState.user!, scopes);
 
+      // Store token in auth state only if OAuth code exchange
+      if (code && !authState.token) {
+        authState.token = token;
+      }
+
       // Return user info (never the token)
       authState.user = {
         id: String(user.id),
@@ -370,10 +403,11 @@ async function handleRequest(
       };
       authState.scopes = scopes;
 
-      // Return user info (never the token)
+      // Return user info + token (for OAuth code exchange, include token)
       return json(res, {
         user: authState.user,
         scopes,
+        token: code ? authState.token : undefined,
       });
     } catch (err) {
       return jsonError(res, 500, "Auth failed");
