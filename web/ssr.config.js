@@ -72,6 +72,15 @@ export default {
         description: 'Privacy Policy for migrare.',
       },
     },
+    {
+      path:       '/oauth-callback',
+      priority:   '0.0',
+      changefreq: 'never',
+      meta: {
+        title:       'Authenticating… — migrare',
+        description: 'Redirecting from GitHub OAuth…',
+      },
+    },
   ],
 
   buildJsonLd() {
