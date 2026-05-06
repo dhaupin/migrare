@@ -28,13 +28,15 @@ export default function OAuthCallback() {
     })
       .then((r) => r.json())
       .then((d) => {
-        if (d.user) {
+        if (d.error) {
+          setError(d.error || "Failed to authenticate");
+        } else if (d.user) {
           // Store token in sessionStorage
           sessionStorage.setItem("gh_token", d.token || "");
           // Redirect to app
           window.location.href = "/app";
         } else {
-          setError(d.message || "Failed to authenticate");
+          setError("Failed to authenticate");
         }
       })
       .catch((e) => setError(e.message));
