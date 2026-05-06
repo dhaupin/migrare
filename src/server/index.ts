@@ -431,7 +431,7 @@ async function handleRequest(
       // Return sanitized repo list
       const sanitized = repos.map((r: any) => ({
         name: r.name,
-        fullName: r.full_name,
+        full_name: r.full_name,
         private: r.private,
         description: r.description,
         updated: r.updated_at,

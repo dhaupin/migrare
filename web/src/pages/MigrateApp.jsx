@@ -185,6 +185,10 @@ function MigrationResult({ result, onDownload }) {
 
 export default function MigrateApp() {
   const [serverOk, setServerOk]           = useState(null);
+  const [authUser, setAuthUser]         = useState(null);  // GitHub user when connected
+  const [repos, setRepos]             = useState([]);    // Available repos
+  const [selectedRepo, setSelectedRepo] = useState(null);  // Selected GitHub repo
+  const [sourceType, setSourceType]       = useState("zip"); // "zip" | "github"
   const [loadedFile, setLoadedFile]       = useState(null);
   const [logs, setLogs]                   = useState([]);
   const [progress, setProgress]           = useState(null);
@@ -217,6 +221,23 @@ export default function MigrateApp() {
       .catch(() => setServerOk(false));
   }, []);
 
+  // Check GitHub auth status on mount
+  useEffect(() => {
+    fetch(`${API}/api/auth/status`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.authenticated) {
+          setAuthUser(d.user);
+          // Fetch repos after auth
+          fetch(`${API}/api/auth/repos`)
+            .then(r => r.json())
+            .then(repoData => setRepos(repoData.repos || []))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleFile = (file) => {
     setLoadedFile(file);
     setScanReport(null);
@@ -225,17 +246,41 @@ export default function MigrateApp() {
     addLog("info", `Loaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
   };
 
+  const handleConnectGitHub = () => {
+    // Initiate OAuth flow - redirect to GitHub
+    const clientId = "Iv23liIoKIDFORTpR3RX";  // OAuth App client ID
+    const redirectUri = encodeURIComponent(window.location.origin + "/oauth-callback");
+    const scope = encodeURIComponent("repo read:org");
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+  };
+
+  const handleDisconnect = () => {
+    setAuthUser(null);
+    setRepos([]);
+    setSelectedRepo(null);
+    setSourceType("zip");
+  };
+
+  // Compute if we have a source (either zip or github repo)
+  const hasProject = !!loadedFile || (sourceType === "github" && selectedRepo);
+
   const runScan = async () => {
-    if (!loadedFile || scanning) return;
+    if (!hasProject || scanning) return;
     setScanning(true); setScanReport(null); setMigResult(null);
-    setProgress({ msg: "Reading zip…", pct: 10 });
+    setProgress({ msg: sourceType === "github" ? "Loading from GitHub…" : "Reading zip…", pct: 10 });
     try {
-      const b64 = await fileToBase64(loadedFile);
+      let scanPayload;
+      if (sourceType === "github" && selectedRepo) {
+        scanPayload = { source: { github: selectedRepo } };
+      } else {
+        const b64 = await fileToBase64(loadedFile);
+        scanPayload = { source: { zip: b64, name: loadedFile.name } };
+      }
       setProgress({ msg: "Scanning for lock-in signals…", pct: 35 });
       const res = await fetch(`${API}/api/scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: { zip: b64, name: loadedFile.name } }),
+        body: JSON.stringify(scanPayload),
       });
       setProgress({ msg: "Building report…", pct: 80 });
       const report = await res.json();
@@ -252,17 +297,23 @@ export default function MigrateApp() {
   };
 
   const runMigrate = async () => {
-    if (!loadedFile || migrating) return;
+    if (!hasProject || migrating) return;
     const dryRun = migMode === "preview";
     setMigrating(true); setMigResult(null);
-    setProgress({ msg: "Reading zip…", pct: 10 });
+    setProgress({ msg: sourceType === "github" ? "Loading from GitHub…" : "Reading zip…", pct: 10 });
     try {
-      const b64 = await fileToBase64(loadedFile);
+      let migratePayload;
+      if (sourceType === "github" && selectedRepo) {
+        migratePayload = { source: { github: selectedRepo }, dryRun, targetAdapter: selectedTarget };
+      } else {
+        const b64 = await fileToBase64(loadedFile);
+        migratePayload = { source: { zip: b64, name: loadedFile.name }, dryRun, targetAdapter: selectedTarget };
+      }
       setProgress({ msg: dryRun ? "Computing transforms…" : "Applying transforms…", pct: 45 });
       const res = await fetch(`${API}/api/migrate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: { zip: b64, name: loadedFile.name }, dryRun, targetAdapter: selectedTarget }),
+        body: JSON.stringify(migratePayload),
       });
       setProgress({ msg: "Finalizing…", pct: 85 });
       const result = await res.json();
@@ -291,7 +342,6 @@ export default function MigrateApp() {
   };
 
   const busy = scanning || migrating;
-  const hasProject = !!loadedFile;
   const apiOnline = serverOk === true;
   const hasFile = hasProject && apiOnline;
   const statusLabel = apiOnline
@@ -325,15 +375,71 @@ export default function MigrateApp() {
             </span>
           </div>
 
-          {/* source */}
+          {/* source type tabs */}
           <div className="flex items-center gap-2 mb-2">
             <span className="section-label section-label-inline">source</span>
-            <Tip
-              text="Export your project as a ZIP from Lovable (or zip a GitHub clone). Drop it here."
-              
-            />
+            <Tip text="Connect GitHub to scan your repos directly, or upload a ZIP export." />
           </div>
-          <DropZone onFile={handleFile} loadedFile={loadedFile} />
+          <div className="source-tabs">
+            <button
+              className={`source-tab ${sourceType === "zip" ? "active" : ""}`}
+              onClick={() => setSourceType("zip")}
+            >
+              <span className="t-xs">ZIP</span>
+            </button>
+            <button
+              className={`source-tab ${sourceType === "github" ? "active" : ""}`}
+              onClick={() => setSourceType("github")}
+            >
+              <span className="t-xs">GitHub</span>
+            </button>
+          </div>
+
+          {/* source content based on type */}
+          {sourceType === "zip" && (
+            <DropZone onFile={handleFile} loadedFile={loadedFile} />
+          )}
+
+          {sourceType === "github" && !authUser && (
+            <div className="connect-github-panel">
+              <div className="connect-github-content">
+                <div className="t-dim t-sm mb-2">
+                  Connect your GitHub account to scan and migrate your repos directly.
+                </div>
+                <button className="btn btn-primary btn-block" onClick={handleConnectGitHub}>
+                  <span className="btn-icon">◉</span> Connect GitHub
+                </button>
+              </div>
+            </div>
+          )}
+
+          {sourceType === "github" && authUser && (
+            <div className="connect-github-panel connected">
+              <div className="connected-header">
+                <img src={authUser.avatar_url} alt="" className="connected-avatar" />
+                <div className="connected-info">
+                  <span className="t-white t-sm">{authUser.login}</span>
+                  <button className="btn btn-ghost btn-xs" onClick={handleDisconnect}>
+                    disconnect
+                  </button>
+                </div>
+              </div>
+              {repos.length > 0 && (
+                <select
+                  className="repo-select"
+                  value={selectedRepo || ""}
+                  onChange={(e) => setSelectedRepo(e.target.value)}
+                >
+                  <option value="">Select a repo…</option>
+                  {repos.map((r) => (
+                    <option key={r.full_name} value={r.full_name}>
+                      {r.full_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
 
           {/* target */}
           <div className="flex items-center gap-2 mt-4 mb-2">
