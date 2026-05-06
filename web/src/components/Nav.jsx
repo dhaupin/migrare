@@ -9,9 +9,6 @@ export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [serverOk, setServerOk] = useState(null);
   const [authUser, setAuthUser] = useState(null);
-  const [showTokenInput, setShowTokenInput] = useState(false);
-  const [token, setToken] = useState("");
-  const [loading, setLoading] = useState(false);
   const location = useLocation();
 
   // Check auth status on mount
@@ -43,13 +40,11 @@ export default function Nav() {
     } catch {}
   };
 
-  const handleAuth = async () => {
-    if (!token.trim()) return;
-    setLoading(true);
-    await validateToken(token.trim());
-    setLoading(false);
-    setShowTokenInput(false);
-    setToken("");
+  const handleConnect = () => {
+    const clientId = "Iv23liIoKIDFORTpR3RX";
+    const redirectUri = encodeURIComponent(window.location.origin + "/oauth-callback");
+    const scope = "repo,read:org";
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
   };
 
   const handleLogout = async () => {
@@ -111,28 +106,8 @@ export default function Nav() {
               Logout
             </button>
           </div>
-        ) : showTokenInput ? (
-          <div className="auth-input-group">
-            <input
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="ghp_..."
-              className="auth-input"
-              onKeyDown={(e) => e.key === "Enter" && handleAuth()}
-            />
-            <button onClick={handleAuth} disabled={loading} className="btn btn-sm">
-              {loading ? "..." : "Add"}
-            </button>
-            <button onClick={() => setShowTokenInput(false)} className="btn btn-sm btn-ghost">
-              ✕
-            </button>
-          </div>
         ) : (
-          <button
-            onClick={() => setShowTokenInput(true)}
-            className="btn btn-sm btn-secondary"
-          >
+          <button onClick={handleConnect} className="btn btn-sm btn-secondary">
             <GithubIcon />
             Connect
           </button>
