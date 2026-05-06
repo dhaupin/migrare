@@ -1289,9 +1289,16 @@ async function handleGitHubToken(request, corsHeaders, env, ip) {
     }
 
     const tokenData = await tokenRes.json();
+
+    if (!tokenRes.ok || tokenData.error) {
+      console.error("OAuth exchange failed:", tokenData);
+      return err(tokenData.error_description || tokenData.error || "OAuth code exchange failed", 401, corsHeaders);
+    }
+
     token = tokenData.access_token;
 
     if (!token) {
+      console.error("OAuth: no access_token in response:", tokenData);
       return err("No access token returned", 401, corsHeaders);
     }
   }
