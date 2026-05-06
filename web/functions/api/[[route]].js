@@ -1296,7 +1296,6 @@ async function handleGitHubToken(request, corsHeaders, env, ip) {
         client_id: env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY",
         client_secret: clientSecret,
         code,
-        redirect_uri: new URL(request.url).origin + "/oauth-callback",
       }),
     });
 
@@ -1417,6 +1416,10 @@ export async function onRequest({ request, env }) {
 
     if (path === "/api/health" && method === "GET") {
       response = Response.json({ ok: true, version: "0.1.0" }, { headers: corsHeaders });
+    } else if (path === "/api/config" && method === "GET") {
+      response = Response.json({
+        githubClientId: env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY",
+      }, { headers: corsHeaders });
     } else if (path === "/api/spec" && method === "GET") {
       response = await handleSpec(corsHeaders);
     } else if (path === "/api/scan" && method === "POST") {
