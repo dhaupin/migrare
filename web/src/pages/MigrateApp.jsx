@@ -248,9 +248,9 @@ export default function MigrateApp() {
 
   const handleConnectGitHub = () => {
     // Initiate OAuth flow - redirect to GitHub
-    const clientId = "Iv23liIoKIDFORTpR3RX";  // OAuth App client ID
+    const clientId = "Ov23lijPqkbtomPfV1aY";
     const redirectUri = encodeURIComponent(window.location.origin + "/oauth-callback");
-    const scope = "repo,read:org";  // comma-separated, no spaces
+    const scope = "repo,read:org";
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
   };
 

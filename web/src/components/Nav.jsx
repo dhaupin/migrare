@@ -41,7 +41,7 @@ export default function Nav() {
   };
 
   const handleConnect = () => {
-    const clientId = "Iv23liIoKIDFORTpR3RX";
+    const clientId = "Ov23lijPqkbtomPfV1aY";
     const redirectUri = encodeURIComponent(window.location.origin + "/oauth-callback");
     const scope = "repo,read:org";
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
