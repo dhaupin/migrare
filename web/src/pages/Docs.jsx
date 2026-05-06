@@ -78,6 +78,34 @@ const supabaseSteps = [
   },
 ];
 
+const oauthSteps = [
+  {
+    step: "01",
+    title: "Create a GitHub OAuth App",
+    desc: "Go to github.com/settings/developers → OAuth Apps → New OAuth App. Set Homepage URL to https://migrare.creadev.org and Authorization callback URL to https://migrare.creadev.org/oauth-callback.",
+  },
+  {
+    step: "02",
+    title: "Get your Client ID",
+    desc: "Copy the Client ID from your OAuth App settings. It's used in the web UI code.",
+  },
+  {
+    step: "03",
+    title: "Generate a Client Secret",
+    desc: "In your OAuth App settings, generate a new client secret. Copy it immediately - you won't see it again.",
+  },
+  {
+    step: "04",
+    title: "Add secret to Cloudflare",
+    desc: "In your migrare Cloudflare Pages project → Settings → Variables, add MIGRARE_GITHUB_CLIENT_SECRET with your secret value. Click Save deployment.",
+  },
+  {
+    step: "05",
+    title: "Connect in Migrare",
+    desc: "Go to migrare.creadev.org/app → click GitHub → click Connect. Authorize on GitHub and you'll be redirected back with an authenticated session.",
+  },
+];
+
 export default function Docs() {
   return (
     <div className="page">
@@ -182,6 +210,32 @@ VITE_API_DOMAIN=https://api.yourdomain.com`}</code></pre>
         <p className="t-dim t-xs" style={{ marginTop: "var(--s-3)" }}>
           Make sure .env is in your .gitignore - never commit credentials.
         </p>
+      </section>
+
+      {/* Supabase OAuth (GitHub Connect) */}
+      <section className="section content-max">
+        <p className="section-label">connect github (optional)</p>
+        <div className="help-block">
+          <p className="help-text">
+            Connect your GitHub account to scan repos directly from migrare. You'll need a GitHub OAuth App and your Client Secret deployed to Cloudflare.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {oauthSteps.map((s) => (
+            <div key={s.step} className="card">
+              <div className="card-header">
+                <span className="t-muted t-xs t-upper t-track">{s.step}</span>
+                <span className="t-white t-md" style={{ fontFamily: "var(--sans)", fontWeight: 500 }}>
+                  {s.title}
+                </span>
+              </div>
+              <div className="card-body">
+                <p className="help-text" style={{ margin: 0 }}>{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* FAQs */}
