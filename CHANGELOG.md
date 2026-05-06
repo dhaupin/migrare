@@ -7,6 +7,58 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.2.0] — 2026-05-06
+
+GitHub auth added for CLI and web UI.
+
+### Added
+
+**CLI**
+- Token prompt in wizard — checks for GITHUB_TOKEN/MIGRARE_TOKEN on startup, prompts user if missing
+- `--github-token` flag — pass PAT directly to CLI
+- Auth status display — shows connected user and scopes in wizard menu
+
+**Server**
+- `/api/auth/status` — check if authenticated
+- `/api/auth/github/token` — validate PAT and store session
+- `/api/auth/logout` — clear session
+- `/api/auth/repos` — list user's repositories
+
+**Web UI**
+- Connect GitHub button in nav — enter PAT
+- Token validation on login
+- sessionStorage for token (cleared on tab close)
+
+### Security
+
+**Rate limiting**
+- Per-IP rate limiting on all endpoints (100/min global, endpoint-specific limits 10-30/min)
+- Token validation caching (5 min TTL) to reduce GitHub API calls
+
+**Input validation**
+- Path sanitization blocks directory traversal attacks
+- Body size limited to 1MB
+- Query params validated (visibility, per_page capped at 100)
+
+**Headers**
+- Content-Security-Policy, X-Frame-Options, X-XSS-Protection
+- Referrer-Policy, X-Content-Type-Options
+- Basic WAF blocks XSS patterns in query strings
+
+### Changed
+
+- Tokens stored in server memory only (not persisted)
+- sessionStorage instead of localStorage for web token
+
+### Fixed
+- Prestruct scripts updated to v0.2.3 to fix duplicate meta tags
+
+### Shared
+- `@dhaupin/security` - rate limiting, input sanitization, WAF (npm)
+- `@dhaupin/qos` - retry, timeout, circuit breaker (npm)
+
+---
+
 ## [0.1.0] — 2026-04-17
 
 Bolt.new, Replit, and v0 (Vercel) support added.

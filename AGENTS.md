@@ -423,6 +423,66 @@ These stubs exist in the codebase but are not wired end-to-end:
 | GitHub OAuth callback handler | Not implemented | Reads `?code=` + `?state=` from the URL |
 | Repo picker UI | Not implemented | Post-OAuth repo list + selection |
 | AST transforms | Not implemented | `file.ast` is reserved; `ts-morph` integration planned |
+| Security layer | ✅ Implemented | Rate limiting, input validation, security headers |
+| Shared libs | ✅ Available | @dhaupin/security, @dhaupin/qos (see below) |
+
+---
+
+## Shared Libraries (v0.2.0+)
+
+migrare, weisync, and threadforge share security/QoS utilities via:
+
+### @dhaupin/security
+Rate limiting, input sanitization, WAF for Node.js servers:
+```typescript
+import { RateLimiter, sanitizePath, createWaf, getSecurityHeaders } from '@dhaupin/security';
+
+// Rate limiting (per-endpoint, per-IP)
+const limiter = new RateLimiter({ maxRequests: 30, windowMs: 60000 });
+limiter.check('user-ip', 'scan');
+
+// Input sanitization
+sanitizePath('../etc/passwd');  // null (blocked)
+sanitizePath('my-project');     // 'my-project'
+
+// WAF + security headers
+const waf = createWaf();
+waf.checkRequest(req);
+```
+
+### @dhaupin/qos
+Retry, timeout, circuit breaker:
+```typescript
+import { withRetry, CircuitBreaker, withTimeout } from '@dhaupin/qos';
+
+// Retry with exponential backoff
+await withRetry(() => apiCall(), { retries: 3 });
+
+// Circuit breaker
+const breaker = new CircuitBreaker({ failureThreshold: 5 });
+await breaker.execute(() => riskyOp());
+```
+
+---
+
+## Security (v0.2.0+)
+
+The server implements defense in depth:
+
+### Rate limiting
+- In-memory rate limiter per IP and endpoint
+- Token validation cached 5 min to reduce GitHub API calls
+- Strict limits on auth endpoints (10-20/min) vs more generous on scan/migrate (20-30/min)
+
+### Input validation
+- All paths sanitized against traversal (`..`, absolute paths blocked)
+- Body size limited to 1MB
+- Query params validated and capped
+
+### Security headers
+- `Content-Security-Policy`: strict CSP
+- `X-Frame-Options: DENY`, `X-XSS-Protection`
+- `Referrer-Policy: strict-origin-when-cross-origin`
 
 ---
 

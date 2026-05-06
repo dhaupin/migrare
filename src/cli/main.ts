@@ -37,19 +37,27 @@ import { formatScanReport } from "./formatter.js";
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    help:      { type: "boolean", short: "h" },
-    version:   { type: "boolean", short: "v" },
-    "dry-run": { type: "boolean", short: "d" },
-    output:    { type: "string",  short: "o" },
-    target:    { type: "string",  short: "t", default: "vite" },
-    port:      { type: "string",  short: "p", default: "4242" },
-    json:      { type: "boolean" },
-    quiet:     { type: "boolean", short: "q" },
+    help:         { type: "boolean", short: "h" },
+    version:     { type: "boolean", short: "v" },
+    "dry-run":    { type: "boolean", short: "d" },
+    output:       { type: "string",  short: "o" },
+    target:       { type: "string",  short: "t", default: "vite" },
+    port:         { type: "string",  short: "p", default: "4242" },
+    "github-token": { type: "string" },
+    json:         { type: "boolean" },
+    quiet:        { type: "boolean", short: "q" },
   },
   allowPositionals: true,
 });
 
 const [command, projectPath] = positionals;
+
+// ---------------------------------------------------------------------------
+// Handle --github-token flag (sets env for the session)
+// ---------------------------------------------------------------------------
+if (values["github-token"]) {
+  process.env.MIGRARE_TOKEN = values["github-token"] as string;
+}
 
 // ---------------------------------------------------------------------------
 // --version
@@ -150,19 +158,24 @@ function printHelp() {
   npx migrare ui                     open web UI in browser
 
 \x1b[2mOPTIONS\x1b[0m
-  -t, --target <adapter>             output adapter: vite (default), nextjs
+  -t, --target <adapter>             output adapter: vite (default), nextjs, github-pr
   -o, --output <path>                output directory (default: <project>-migrated)
   -d, --dry-run                      preview changes without writing files
   -p, --port <port>                  web UI port (default: 4242)
+      --github-token <token>          GitHub PAT for GitHub PR output
       --json                         output results as JSON
   -q, --quiet                        suppress progress output
   -v, --version                      print version
   -h, --help                         show this help
 
+\x1b[2mENVIRONMENT\x1b[0m
+  GITHUB_TOKEN                      GitHub Personal Access Token
+  MIGRARE_TOKEN                     Override for GITHUB_TOKEN
+
 \x1b[2mEXAMPLES\x1b[0m
   npx migrare scan ./my-lovable-app
   npx migrare migrate ./my-lovable-app --output ./my-app --target vite
-  npx migrare migrate ./my-lovable-app --dry-run
+  npx migrare migrate ./my-lovable-app --dry-run --github-token ghp_...
   npx migrare ui
 `);
 }

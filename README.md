@@ -39,6 +39,42 @@ Then it applies transforms: removes the build dep, moves credentials to env vars
 
 The repo is structured so that everything CF Pages needs lives under `web/`.
 
+---
+
+## Authentication
+
+For CLI and web UI to access GitHub repos and open PRs:
+
+| Token | Where | Purpose |
+|-------|-------|---------|
+| `GITHUB_TOKEN` | CLI env | GitHub PAT for all operations |
+| `MIGRARE_TOKEN` | CLI env | Override GITHUB_TOKEN |
+| `MIGRARE_GITHUB_CLIENT_ID` | Web/OAuth | OAuth App client ID |
+
+### Required scopes
+
+For full migrare functionality, your GitHub token needs:
+- `repo` - read and write repositories
+- `read:org` - read organizations
+
+### Rate limits
+
+The server applies rate limits to protect the GitHub API:
+- `/api/auth/status`: 30 requests/minute per IP
+- `/api/auth/github/token`: 20 requests/minute per IP
+- `/api/auth/repos`: 10 requests/minute per IP
+- `/api/scan`: 30 requests/minute per IP
+- `/api/migrate`: 20 requests/minute per IP
+
+Token validation results are cached for 5 minutes.
+
+### Security
+
+- Tokens are stored in server memory only (never persisted)
+- Web UI uses sessionStorage (cleared on tab close)
+- All paths are sanitized against directory traversal
+- Request bodies limited to 1MB
+
 ```
 web/
   functions/api/[[route]].js   ← CF Pages Functions (API)

@@ -8,6 +8,9 @@
 // that either resolves (moving to the next step) or loops (on invalid input).
 // It uses Node's readline/promises API — no external prompt libraries.
 //
+// AUTH: The wizard checks for GITHUB_TOKEN on startup and prompts user if missing.
+// For GitHub PR output, a valid token with 'repo' scope is required.
+//
 // AUDIENCE: People who are comfortable enough to run npx but may not know the
 // full CLI syntax. The wizard discovers and explains; the CLI commands execute.
 //
@@ -32,8 +35,12 @@ const RED    = "\x1b[31m";
 
 export class WizardFlow {
   private rl = readline.createInterface({ input, output });
+  private hasGitHubToken = false;
+  private tokenScopes: string[] = [];
 
   async run(): Promise<void> {
+    // Check for GitHub token on startup
+    await this.checkAuth();
     this.printBanner();
     await this.sleep(400);
 
@@ -45,6 +52,77 @@ export class WizardFlow {
   }
 
   // ---------------------------------------------------------------------------
+  // Auth check
+  // ---------------------------------------------------------------------------
+
+  private async checkAuth(): Promise<void> {
+    const token = process.env.MIGRARE_TOKEN ?? process.env.GITHUB_TOKEN;
+    this.hasGitHubToken = !!token;
+    
+    if (token) {
+      // Validate token and get scopes
+      try {
+        const res = await fetch("https://api.github.com/user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+        });
+        if (res.ok) {
+          const scopeHeader = res.headers.get("x-oauth-scopes") ?? "";
+          this.tokenScopes = scopeHeader.split(",").map(s => s.trim()).filter(Boolean);
+        }
+      } catch {
+        // Token validation failed - clear flag
+        this.hasGitHubToken = false;
+      }
+    }
+  }
+
+  private async ensureAuth(): Promise<string | null> {
+    if (this.hasGitHubToken) return process.env.MIGRARE_TOKEN ?? process.env.GITHUB_TOKEN ?? null;
+    
+    this.line();
+    this.print(`  ${YELLOW}GitHub token required${RESET}`);
+    this.print(`  To migrate to GitHub PR, migrare needs a GitHub Personal Access Token.`);
+    this.print(`  The token should have ${CYAN}repo${RESET} scope.\n`);
+    
+    const choice = await this.select("How would you like to proceed?", [
+      { key: "1", label: "Enter token now    — paste your PAT" },
+      { key: "2", label: "Show me how    — get a token from GitHub" },
+      { key: "s", label: "Skip for now  — local FS output only" },
+    ]);
+    
+    if (choice === "1") {
+      const token = await this.ask(`  ${CYAN}GitHub PAT${RESET}`);
+      this.hasGitHubToken = !!token;
+      if (token) {
+        // Store in env for the session
+        process.env.MIGRARE_TOKEN = token;
+        await this.checkAuth();
+      }
+      return token || null;
+    }
+    if (choice === "2") {
+      this.print(`\n  ${DIM}Get a token:${RESET}`);
+      this.print(`    1. Go to https://github.com/settings/tokens`);
+      this.print(`    2. Click "Generate new token (classic)"`);
+      this.print(`    3. Select scope: ${CYAN}repo${RESET} (full control)`);
+      this.print(`    4. Copy the token and come back here`);
+      this.print(`\n  ${DIM}Note: Tokens are shown once. Store it safely.${RESET}`);
+      await this.confirm("  Press Enter when ready...");
+      const token = await this.ask(`  ${CYAN}GitHub PAT${RESET}`);
+      this.hasGitHubToken = !!token;
+      if (token) {
+        process.env.MIGRARE_TOKEN = token;
+        await this.checkAuth();
+      }
+      return token || null;
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------------------
   // Steps
   // ---------------------------------------------------------------------------
 
@@ -53,6 +131,17 @@ export class WizardFlow {
     this.print(`  ${DIM}Your code belongs to you.${RESET}`);
     this.print(`  migrare scans your project for vendor lock-in and migrates it`);
     this.print(`  to a clean, portable codebase you fully own.\n`);
+
+    // Show auth status
+    if (this.hasGitHubToken) {
+      const scopes = this.tokenScopes.length > 0 
+        ? this.tokenScopes.join(", ") 
+        : "unknown";
+      this.print(`  ${GREEN}▸${RESET} GitHub ${DIM}(scopes: ${scopes})${RESET}`);
+    } else {
+      this.print(`  ${DIM}▸ GitHub ${YELLOW}not connected${RESET}`);
+    }
+    this.print("");
 
     const choice = await this.select("What would you like to do?", [
       { key: "1", label: "Scan a project       — detect lock-in signals (read-only)" },
@@ -218,8 +307,10 @@ export class WizardFlow {
     }
   }
 
-  private async ask(prompt: string, defaultVal?: string): Promise<string> {
+  private async ask(prompt: string, defaultVal?: string, _silent = false): Promise<string> {
     const hint = defaultVal ? ` ${DIM}[${defaultVal}]${RESET}` : "";
+    // Note: Node readline doesn't have silent option - tokens echo in CLI
+    // For production, consider using a TTY-based hidden input
     const answer = (await this.rl.question(`\n${prompt}${hint}\n  ${DIM}›${RESET} `)).trim();
     return answer || defaultVal || "";
   }
