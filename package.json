@@ -18,15 +18,22 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build":        "tsc && npm run build:web",
-    "build:core":   "tsc",
-    "build:web":    "cd web && npm install && npm run build",
-    "dev":          "tsc --watch",
-    "dev:web":      "cd web && npm run dev",
-    "start":        "node dist/cli/main.js",
+    "build": "tsc && npm run build:web",
+    "build:core": "tsc",
+    "build:web": "cd web && npm install && npm run build",
+    "dev": "tsc --watch",
+    "dev:web": "cd web && npm run dev",
+    "start": "node dist/cli/main.js",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["migration", "lovable", "bolt", "replit", "vibe-coding", "vendor-lock-in"],
+  "keywords": [
+    "migration",
+    "lovable",
+    "bolt",
+    "replit",
+    "vibe-coding",
+    "vendor-lock-in"
+  ],
   "license": "MIT",
   "homepage": "https://migrare.creadev.org",
   "repository": {
@@ -36,9 +43,12 @@
   "bugs": {
     "url": "https://github.com/dhaupin/migrare/issues"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@creadev.org/qos": "^0.1.0",
+    "@creadev.org/security": "^0.1.0"
+  },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
   }
 }
