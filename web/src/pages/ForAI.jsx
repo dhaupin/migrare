@@ -253,6 +253,44 @@ for (const file of result.files) {
   .then(spec => { /* endpoints, shapes, version */ })`}</code></pre>
       </section>
 
+      {/* Auth endpoints */}
+      <section className="section content-max">
+        <p className="section-label">POST /api/auth/github/token</p>
+        <div className="help-block">
+          <p className="help-text">
+            Exchange an OAuth code for a GitHub token, or validate a provided token.
+            Returns user info and the token for session storage.
+          </p>
+        </div>
+        <pre><code>{`// OAuth code exchange
+const res = await fetch("https://migrare.creadev.org/api/auth/github/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ code: "oauth_code_from_github" }),
+});
+const { user, token } = await res.json();
+
+// Or validate an existing token
+const res2 = await fetch("https://migrare.creadev.org/api/auth/github/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ token: "ghp_existing_token" }),
+});`}</code></pre>
+      </section>
+
+      <section className="section content-max">
+        <p className="section-label">GET /api/auth/status</p>
+        <div className="help-block">
+          <p className="help-text">
+            Check if a token is valid. Returns user info without token.
+          </p>
+        </div>
+        <pre><code>{`const res = await fetch("https://migrare.creadev.org/api/auth/status", {
+  headers: { Authorization: "Bearer ghp_token_here" },
+});
+const { authenticated, user } = await res.json();`}</code></pre>
+      </section>
+
       {/* llms.txt */}
       <section className="section content-max">
         <p className="section-label">llms.txt</p>
