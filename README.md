@@ -66,8 +66,9 @@ For the web UI's GitHub connect flow:
 
 3. Use the **Client ID** in your code (see `MigrateApp.jsx`, `Nav.jsx`)
 4. Add a **Client secret** (generate at bottom of OAuth App page)
-5. Set as Cloudflare env variable: `MIGRARE_GITHUB_CLIENT_SECRET`
-6. The callback route must be added to `ssr.config.js` routes for prerendering
+5. In the OAuth App settings, "Enable Device Flow" is optional (for CLI/mobile use)
+6. Set as Cloudflare env variable: `MIGRARE_GITHUB_CLIENT_SECRET`
+7. The callback route must be added to `ssr.config.js` routes for prerendering
 
 ### Required scopes
 
