@@ -1274,6 +1274,11 @@ async function handleGitHubToken(request, corsHeaders, env, ip) {
       return err("OAuth not configured", 500, corsHeaders);
     }
 
+    // Debug: what's being sent?
+    const reqClientId = env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY";
+    console.log("OAUTH exchange - client_id:", reqClientId);
+    console.log("OAUTH exchange - code prefix:", code?.slice(0, 10));
+
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
       headers: {
@@ -1292,6 +1297,7 @@ async function handleGitHubToken(request, corsHeaders, env, ip) {
     }
 
     const tokenData = await tokenRes.json();
+    console.log("OAUTH GitHub response:", tokenData);
 
     if (!tokenRes.ok || tokenData.error) {
       console.error("OAuth exchange failed:", tokenData);

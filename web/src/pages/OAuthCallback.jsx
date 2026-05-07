@@ -22,13 +22,18 @@ export default function OAuthCallback() {
 
     // Exchange code for token
     const stateParam = searchParams.get("state");
+    console.log("OAUTH callback - code:", code?.slice(0, 8), "state:", stateParam?.slice(0, 20));
     fetch("/api/auth/github/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, state: stateParam }),
     })
-      .then((r) => r.json())
+      .then((r) => {
+        console.log("OAUTH callback - response status:", r.status);
+        return r.json();
+      })
       .then((d) => {
+        console.log("OAUTH callback - response:", d);
         if (d.error) {
           setError(d.error || "Failed to authenticate");
         } else if (d.user) {
