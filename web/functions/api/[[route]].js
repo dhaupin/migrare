@@ -1405,9 +1405,15 @@ export async function onRequest({ request, env }) {
     if (path === "/api/health" && method === "GET") {
       response = Response.json({ ok: true, version: "0.1.0" }, { headers: corsHeaders });
     } else if (path === "/api/config" && method === "GET") {
+      // Debug: log what's available
+      console.log("CFG: MIGRARE_GITHUB_CLIENT_ID =", env.MIGRARE_GITHUB_CLIENT_ID);
+      console.log("CFG: typeof =", typeof env.MIGRARE_GITHUB_CLIENT_ID);
+      console.log("CFG: keys =", Object.keys(env).filter(k => k.includes("MIGRARE")));
+      
       response = Response.json({
         githubClientId: env.MIGRARE_GITHUB_CLIENT_ID || "Ov23lijPqkbtomPfV1aY",
         hasSecret: !!env.MIGRARE_GITHUB_CLIENT_SECRET,
+        debugKeys: Object.keys(env).filter(k => k.includes("MIGRARE")),
       }, { headers: corsHeaders });
     } else if (path === "/api/spec" && method === "GET") {
       response = await handleSpec(corsHeaders);
