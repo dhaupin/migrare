@@ -424,18 +424,18 @@ These stubs exist in the codebase but are not wired end-to-end:
 | Repo picker UI | Not implemented | Post-OAuth repo list + selection |
 | AST transforms | Not implemented | `file.ast` is reserved; `ts-morph` integration planned |
 | Security layer | ✅ Implemented | Rate limiting, input validation, security headers |
-| Shared libs | ✅ Available | @dhaupin/security, @dhaupin/qos (see below) |
+| Shared libs | ✅ Available | @creadev.org/security, @creadev.org/qos (see below) |
 
 ---
 
-## Shared Libraries (v0.2.0+)
+## Shared Libraries (v0.3.1)
 
 migrare, weisync, and threadforge share security/QoS utilities via:
 
-### @dhaupin/security
+### @creadev.org/security
 Rate limiting, input sanitization, WAF for Node.js servers:
 ```typescript
-import { RateLimiter, sanitizePath, createWaf, getSecurityHeaders } from '@dhaupin/security';
+import { RateLimiter, sanitizePath, createWaf, getSecurityHeaders } from '@creadev.org/security';
 
 // Rate limiting (per-endpoint, per-IP)
 const limiter = new RateLimiter({ maxRequests: 30, windowMs: 60000 });
@@ -450,10 +450,10 @@ const waf = createWaf();
 waf.checkRequest(req);
 ```
 
-### @dhaupin/qos
+### @creadev.org/qos
 Retry, timeout, circuit breaker:
 ```typescript
-import { withRetry, CircuitBreaker, withTimeout } from '@dhaupin/qos';
+import { withRetry, CircuitBreaker, withTimeout } from '@creadev.org/qos';
 
 // Retry with exponential backoff
 await withRetry(() => apiCall(), { retries: 3 });
@@ -465,7 +465,7 @@ await breaker.execute(() => riskyOp());
 
 ---
 
-## Security (v0.2.0+)
+## Security (v0.3.1)
 
 The server implements defense in depth:
 

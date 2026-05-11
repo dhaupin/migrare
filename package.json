@@ -44,8 +44,8 @@
     "url": "https://github.com/dhaupin/migrare/issues"
   },
   "dependencies": {
-    "@creadev.org/qos": "^0.1.0",
-    "@creadev.org/security": "^0.1.0"
+    "@creadev.org/qos": "^0.3.1",
+    "@creadev.org/security": "^0.3.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

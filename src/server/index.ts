@@ -47,64 +47,57 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createEngine } from "../index.js";
 import type { MigrareEngine } from "../core/types/index.js";
-// Shared security - @dhaupin/security, @dhaupin/qos 
-// See: https://github.com/dhaupin/security
+
+// @creadev.org security & QoS layers
+import { 
+  RateLimiter, 
+  sanitizePath, 
+  sanitizeRepoName,
+  createWaf, 
+  getSecurityHeaders,
+  getClientIP,
+  firewall
+} from '@creadev.org/security';
+
+import { 
+  withRetry, 
+  CircuitBreaker
+} from '@creadev.org/qos';
+
+// See: https://github.com/creadev
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 // ---------------------------------------------------------------------------
-// Rate limiting (in-memory, zero-dep)
+// Security layer initialization (@creadev.org/security)
 // ---------------------------------------------------------------------------
 
-interface RateLimitEntry {
-  count: number;
-  reset: number; // timestamp when reset
-  firstRequest: number; // timestamp of first request
-}
+// Rate limiter - 30 requests per minute per key
+const rateLimiter = new RateLimiter({ maxRequests: 30, windowMs: 60000 });
 
+// WAF for query string attack detection
+const waf = createWaf();
+
+// Security headers for all responses
+const securityHeaders = getSecurityHeaders();
+
+// Circuit breaker for external API calls (GitHub API)
+const githubBreaker = new CircuitBreaker({ 
+  failureThreshold: 5, 
+  successThreshold: 3,
+  resetTimeoutMs: 30000 
+});
+
+// Token cache with TTL
 interface TokenCacheEntry {
   user: AuthState["user"];
   scopes: string[];
   expires: number;
 }
-
-const rateLimits = new Map<string, RateLimitEntry>();
 const tokenCache = new Map<string, TokenCacheEntry>();
-
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX = 100; // per window per key
 const TOKEN_CACHE_TTL = 300000; // 5 minutes
 
-// Rate limit by IP
-function getClientIp(req: IncomingMessage): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length > 0) {
-    const parts = forwarded.split(",");
-    return parts[0]?.trim() ?? "unknown";
-  }
-  return req.socket.remoteAddress ?? "unknown";
-}
-
-function checkRateLimit(key: string, limit = RATE_LIMIT_MAX): boolean {
-  const now = Date.now();
-  const entry = rateLimits.get(key);
-  
-  if (!entry || now > entry.reset) {
-    rateLimits.set(key, { count: 1, reset: now + RATE_LIMIT_WINDOW, firstRequest: now });
-    return true;
-  }
-  
-  if (entry.count >= limit) {
-    // Rate limited - check how long since first request
-    const waitSeconds = Math.ceil((entry.reset - now) / 1000);
-    console.log(`[migrare:rate-limit] ${key} limited, try again in ${waitSeconds}s`);
-    return false;
-  }
-  
-  entry.count++;
-  return true;
-}
-
+// Token cache helpers
 function getCachedToken(token: string): TokenCacheEntry | null {
   const cached = tokenCache.get(token);
   if (cached && Date.now() < cached.expires) {
@@ -118,59 +111,29 @@ function setCachedToken(token: string, user: AuthState["user"], scopes: string[]
   tokenCache.set(token, { user, scopes, expires: Date.now() + TOKEN_CACHE_TTL });
 }
 
-function clearTokenCache(): void {
-  // Call periodically to prevent memory leak
+// Clean up expired tokens periodically
+setInterval(() => {
   const now = Date.now();
   for (const [token, entry] of tokenCache) {
     if (now > entry.expires) {
       tokenCache.delete(token);
     }
   }
-}
+}, 60000);
 
 // ---------------------------------------------------------------------------
-// Input validation and sanitization
+// Resilient GitHub API wrapper (@creadev.org/qos)
 // ---------------------------------------------------------------------------
 
-const MAX_BODY_SIZE = 1024 * 1024; // 1MB max
-
-function sanitizePath(path: string): string | null {
-  // Block directory traversal attempts
-  if (!path || typeof path !== "string") return null;
-  
-  // Normalize and check for traversal
-  const normalized = path.replace(/\\/g, "/");
-  
-  // Block if contains parent directory references after normalization
-  if (normalized.includes("..") || normalized.startsWith("/") || /^[a-zA-Z]:/.test(normalized)) {
-    return null;
-  }
-  
-  // Only allow safe characters
-  if (!/^[a-zA-Z0-9_./\-]+$/.test(normalized)) {
-    return null;
-  }
-  
-  return normalized;
-}
-
-function sanitizeRepoName(name: string): string | null {
-  if (!name || typeof name !== "string") return null;
-  
-  // GitHub repo names: alphanumeric, hyphens, underscores, dots
-  if (!/^[a-zA-Z0-9_.\-]+$/.test(name)) return null;
-  if (name.length > 100) return null;
-  
-  return name;
-}
-
-function validateBodySize(headers: IncomingMessage["headers"]): boolean {
-  const length = headers["content-length"];
-  if (length) {
-    const size = parseInt(length as string, 10);
-    return !isNaN(size) && size <= MAX_BODY_SIZE;
-  }
-  return true;
+/** Execute with circuit breaker and retry */
+async function githubFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  return githubBreaker.execute(async () => {
+    return withRetry(() => fetch(url, options), {
+      retries: 3,
+      baseDelayMs: 1000,
+      maxDelayMs: 10000,
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -259,9 +222,19 @@ async function handleRequest(
   const path = url.pathname;
   const method = req.method ?? "GET";
 
-  // Check body size limit
-  if (!validateBodySize(req.headers)) {
+  // Check body size limit using WAF
+  if (!waf.checkBodySize(req.headers)) {
     return jsonError(res, 413, "Request too large");
+  }
+
+  // Check for attack patterns in query string via WAF
+  if (url.search && !waf.checkQuery(url.search).allowed) {
+    return jsonError(res, 400, "Invalid request");
+  }
+
+  // Apply security headers to all responses
+  for (const [key, value] of Object.entries(securityHeaders)) {
+    res.setHeader(key, String(value));
   }
 
   // CORS for the hosted migrare.dev frontend
@@ -297,9 +270,11 @@ async function handleRequest(
   // ---------------------------------------------------------------------------
 
   if (path === "/api/auth/status" && method === "GET") {
-    // Rate limit status checks
-    const ip = getClientIp(req);
-    if (!checkRateLimit(`auth-status:${ip}`, 30)) {
+    // Rate limit status checks using @creadev.org/security RateLimiter
+    const ip = getClientIP(req.headers, 'x-forwarded-for') ?? 'unknown';
+    const rateCheck = rateLimiter.check(ip, 'auth-status');
+    if (!rateCheck.allowed) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfter ?? 1));
       return jsonError(res, 429, "Too many requests");
     }
     
@@ -315,12 +290,14 @@ async function handleRequest(
   }
 
   if (path === "/api/auth/github/token" && method === "POST") {
-    // Rate limit token requests more strictly (prevent abuse)
-    const ip = getClientIp(req);
-    if (!checkRateLimit(`auth-token:${ip}`, 20)) {
+    // Rate limit token requests using @creadev.org/security
+    const ip = getClientIP(req.headers, 'x-forwarded-for') ?? 'unknown';
+    const rateCheck = rateLimiter.check(ip, 'auth-token');
+    if (!rateCheck.allowed) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfter ?? 1));
       return jsonError(res, 429, "Too many requests");
     }
-    
+
     const body = await readBody(req);
     const { code, token: inputToken } = JSON.parse(body);
 
@@ -370,8 +347,8 @@ async function handleRequest(
         return json(res, { user: cached.user, scopes: cached.scopes, cached: true });
       }
 
-      // Validate the token (hits GitHub API)
-      const userRes = await fetch("https://api.github.com/user", {
+      // Validate the token using resilient GitHub API wrapper
+      const userRes = await githubFetch("https://api.github.com/user", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github+json",
@@ -424,12 +401,14 @@ async function handleRequest(
 
   // Get user's repos (for picker)
   if (path === "/api/auth/repos" && method === "GET") {
-    // Rate limit repo requests
-    const ip = getClientIp(req);
-    if (!checkRateLimit(`auth-repos:${ip}`, 10)) {
+    // Rate limit repo requests using @creadev.org/security
+    const ip = getClientIP(req.headers, 'x-forwarded-for') ?? 'unknown';
+    const rateCheck = rateLimiter.check(ip, 'auth-repos');
+    if (!rateCheck.allowed) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfter ?? 1));
       return jsonError(res, 429, "Too many requests");
     }
-    
+
     if (!authState.token) {
       return jsonError(res, 401, "Not authenticated");
     }
@@ -449,7 +428,8 @@ async function handleRequest(
     if (affiliation) params.set("affiliation", affiliation);
 
     try {
-      const ghRes = await fetch(`https://api.github.com/user/repos?${params}`, {
+      // Fetch repos using resilient GitHub API wrapper
+      const ghRes = await githubFetch(`https://api.github.com/user/repos?${params}`, {
         headers: {
           Authorization: `Bearer ${authState.token}`,
           Accept: "application/vnd.github+json",
@@ -490,17 +470,19 @@ async function handleRequest(
   }
 
   if (path === "/api/scan" && method === "POST") {
-    // Rate limit scan requests
-    const ip = getClientIp(req);
-    if (!checkRateLimit(`scan:${ip}`, 30)) {
+    // Rate limit scan requests using @creadev.org/security
+    const ip = getClientIP(req.headers, 'x-forwarded-for') ?? 'unknown';
+    const rateCheck = rateLimiter.check(ip, 'scan');
+    if (!rateCheck.allowed) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfter ?? 1));
       return jsonError(res, 429, "Too many scan requests");
     }
-    
+
     const body = await readBody(req);
     const { source } = JSON.parse(body);
     if (!source) return jsonError(res, 400, "Missing source");
 
-    // Validate and sanitize the source path
+    // Validate and sanitize the source path using @creadev.org/security
     if (typeof source === "object" && "path" in source) {
       const sanitized = sanitizePath(source.path);
       if (!sanitized) return jsonError(res, 400, "Invalid source path");
@@ -512,26 +494,28 @@ async function handleRequest(
   }
 
   if (path === "/api/migrate" && method === "POST") {
-    // Rate limit migrate requests
-    const ip = getClientIp(req);
-    if (!checkRateLimit(`migrate:${ip}`, 20)) {
+    // Rate limit migrate requests using @creadev.org/security
+    const ip = getClientIP(req.headers, 'x-forwarded-for') ?? 'unknown';
+    const rateCheck = rateLimiter.check(ip, 'migrate');
+    if (!rateCheck.allowed) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfter ?? 1));
       return jsonError(res, 429, "Too many migrate requests");
     }
-    
+
     const body = await readBody(req);
     const { source, targetAdapter, targetPath, dryRun, options: adapterOptions } = JSON.parse(body);
     if (!source || !targetAdapter || !targetPath) {
       return jsonError(res, 400, "Missing required fields: source, targetAdapter, targetPath");
     }
 
-    // Validate and sanitize source path
+    // Validate and sanitize source path using @creadev.org/security
     if (typeof source === "object" && "path" in source) {
       const sanitized = sanitizePath(source.path);
       if (!sanitized) return jsonError(res, 400, "Invalid source path");
       source.path = sanitized;
     }
 
-    // Validate targetPath
+    // Validate targetPath using @creadev.org/security
     const sanitizedTarget = sanitizePath(targetPath);
     if (!sanitizedTarget) return jsonError(res, 400, "Invalid target path");
 
